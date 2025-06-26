@@ -33,6 +33,13 @@ const AdminNavigation = ({ activeScreen, onNavigate, user }) => {
             screen: 'AdminEndpointTest'
         },
         {
+            id: 'moduleTest',
+            title: 'Module Testing',
+            icon: 'checkmark-circle-outline',
+            description: 'Test All Modules',
+            screen: 'AdminModuleTest'
+        },
+        {
             id: 'users',
             title: 'User Management',
             icon: 'people-outline',

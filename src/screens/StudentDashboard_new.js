@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Ionicons } from '@expo/vector-icons';
 import StudentNavigation from '../components/student/StudentNavigation';
 import authService from '../services/authService';
-import { studentApiService } from '../services/studentApiService_new';
+import studentApiService from '../services/studentApiService';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');

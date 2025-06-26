@@ -21,14 +21,11 @@ import {
     getDashboardData,
     getSystemHealth,
     getAllUsers,
-    getStudents,
-    getLandlords,
-    getFoodProviders,
     getUserAnalytics,
     getPerformanceMetrics,
     getRevenueAnalytics,
     getAllAccommodations,
-    getPendingAccommodations,
+    getAllOrders,
     getTransactionHistory
 } from '../../services/adminApiService';
 
@@ -111,68 +108,57 @@ const AdminDashboardScreen = ({ navigation }) => {
                 newStats.systemHealth = 'Error';
             }
 
-            // Load user counts
+            // Load user counts (only working endpoints)
             try {
-                const [allUsers, students, landlords, foodProviders] = await Promise.allSettled([
-                    getAllUsers(),
-                    getStudents(),
-                    getLandlords(),
-                    getFoodProviders()
-                ]);
-
-                if (allUsers.status === 'fulfilled') {
-                    newStats.totalUsers = allUsers.value?.length || allUsers.value?.total || 0;
+                const allUsers = await getAllUsers();
+                if (allUsers) {
+                    const usersList = Array.isArray(allUsers) ? allUsers : allUsers.users || [];
+                    newStats.totalUsers = usersList.length;
+                    
+                    // Calculate user types from the users data
+                    newStats.totalStudents = usersList.filter(user => user.role === 'student').length;
+                    newStats.totalLandlords = usersList.filter(user => user.role === 'landlord').length;
+                    newStats.totalFoodProviders = usersList.filter(user => user.role === 'food_provider').length;
+                    
                     console.log(`✅ Total users: ${newStats.totalUsers}`);
-                }
-
-                if (students.status === 'fulfilled') {
-                    newStats.totalStudents = students.value?.length || students.value?.total || 0;
-                    console.log(`✅ Total students: ${newStats.totalStudents}`);
-                }
-
-                if (landlords.status === 'fulfilled') {
-                    newStats.totalLandlords = landlords.value?.length || landlords.value?.total || 0;
-                    console.log(`✅ Total landlords: ${newStats.totalLandlords}`);
-                }
-
-                if (foodProviders.status === 'fulfilled') {
-                    newStats.totalFoodProviders = foodProviders.value?.length || foodProviders.value?.total || 0;
-                    console.log(`✅ Total food providers: ${newStats.totalFoodProviders}`);
+                    console.log(`✅ Students: ${newStats.totalStudents}, Landlords: ${newStats.totalLandlords}, Food Providers: ${newStats.totalFoodProviders}`);
                 }
             } catch (error) {
                 console.warn('⚠️ User data loading failed:', error.message);
                 errors.push('User data loading failed');
             }
 
-            // Load accommodation counts
+            // Load accommodation counts (only working endpoints)
             try {
-                const [allAccommodations, pendingAccommodations] = await Promise.allSettled([
-                    getAllAccommodations(),
-                    getPendingAccommodations()
-                ]);
-
-                if (allAccommodations.status === 'fulfilled') {
-                    newStats.totalAccommodations = allAccommodations.value?.length || allAccommodations.value?.total || 0;
-                    console.log(`✅ Total accommodations: ${newStats.totalAccommodations}`);
-                }
-
-                if (pendingAccommodations.status === 'fulfilled') {
-                    newStats.pendingApprovals = pendingAccommodations.value?.length || pendingAccommodations.value?.total || 0;
-                    console.log(`✅ Pending approvals: ${newStats.pendingApprovals}`);
+                const allAccommodations = await getAllAccommodations();
+                if (allAccommodations) {
+                    const accommodationsList = Array.isArray(allAccommodations) ? allAccommodations : allAccommodations.accommodations || [];
+                    newStats.totalAccommodations = accommodationsList.length;
+                    newStats.pendingApprovals = accommodationsList.filter(acc => acc.status === 'pending').length;
+                    console.log(`✅ Total accommodations: ${newStats.totalAccommodations}, Pending: ${newStats.pendingApprovals}`);
                 }
             } catch (error) {
                 console.warn('⚠️ Accommodation data loading failed:', error.message);
                 errors.push('Accommodation data loading failed');
             }
 
-            // Load revenue data
+            // Load booking and order counts (only working endpoints)
             try {
-                const revenueData = await getRevenueAnalytics(selectedTimeframe);
-                newStats.totalRevenue = revenueData?.totalRevenue || revenueData?.total || 0;
-                console.log(`✅ Total revenue: ${newStats.totalRevenue}`);
+                const allOrders = await getAllOrders();
+                if (allOrders) {
+                    const ordersList = Array.isArray(allOrders) ? allOrders : allOrders.orders || [];
+                    newStats.activeBookings = ordersList.filter(order => order.status === 'active' || order.status === 'confirmed').length;
+                    
+                    // Calculate revenue from orders
+                    newStats.totalRevenue = ordersList.reduce((total, order) => {
+                        return total + (parseFloat(order.total_amount) || parseFloat(order.amount) || 0);
+                    }, 0);
+                    
+                    console.log(`✅ Active bookings: ${newStats.activeBookings}, Total Revenue: $${newStats.totalRevenue}`);
+                }
             } catch (error) {
-                console.warn('⚠️ Revenue data loading failed:', error.message);
-                errors.push('Revenue data loading failed');
+                console.warn('⚠️ Order data loading failed:', error.message);
+                errors.push('Order data loading failed');
             }
 
             // Load recent transactions for activity

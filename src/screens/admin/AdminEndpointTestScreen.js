@@ -8,7 +8,7 @@ import {
     Alert,
     ActivityIndicator
 } from 'react-native';
-import { AdminModuleTester } from '../tests/AdminModuleTester';
+import { AdminModuleTester } from '../../tests/AdminModuleTester';
 
 const AdminEndpointTestScreen = () => {
     const [isRunning, setIsRunning] = useState(false);

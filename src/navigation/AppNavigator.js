@@ -34,6 +34,8 @@ import AdminOrderDetailScreen from '../screens/admin/AdminOrderDetailScreen';
 import AdminSystemHealthScreen from '../screens/admin/AdminSystemHealthScreen';
 import AdminSystemLogsScreen from '../screens/admin/AdminSystemLogsScreen';
 import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
+import AdminModuleTestScreen from '../screens/admin/AdminModuleTestScreen';
+import AdminEndpointTestScreen from '../screens/admin/AdminEndpointTestScreen';
 
 // Import new student screens
 import ChatScreen_new from '../screens/student/ChatScreen_new';
@@ -376,6 +378,20 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="AdminAnalytics" 
           component={AdminAnalyticsScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen 
+          name="AdminModuleTest" 
+          component={AdminModuleTestScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen 
+          name="AdminEndpointTest" 
+          component={AdminEndpointTestScreen}
           options={{ 
             headerShown: false
           }}

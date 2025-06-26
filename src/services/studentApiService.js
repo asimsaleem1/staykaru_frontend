@@ -2,7 +2,7 @@
 // Updated for maximum functionality with real backend data
 
 import { API_BASE_URL } from '../utils/constants';
-import { getAuthToken } from './authService';
+import authService from './authService';
 import { realTimeApiService } from './realTimeApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationService } from './notificationService';
@@ -15,7 +15,7 @@ class StudentApiService {
 
   // Helper method to get headers with authentication
   async getHeaders() {
-    const token = await getAuthToken();
+    const token = await authService.getToken();
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
@@ -44,6 +44,21 @@ class StudentApiService {
     }
     
     throw new Error(`All endpoints failed: ${endpointList.join(', ')}`);
+  }
+
+  // Get student profile
+  async getProfile() {
+    try {
+      console.log('📋 Fetching student profile...');
+      return await this.apiCall([
+        '/student/profile',
+        '/users/profile',
+        '/profile'
+      ]);
+    } catch (error) {
+      console.warn('Profile endpoint not available, using fallback data');
+      return this.generateFallbackData('profile');
+    }
   }
 
   // Fallback data generator
@@ -1615,4 +1630,8 @@ class StudentApiService {
   }
 }
 
-export default new StudentApiService();
+const studentApiService = new StudentApiService();
+
+// Export both default and named exports for compatibility
+export default studentApiService;
+export { studentApiService };
