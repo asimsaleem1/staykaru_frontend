@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { studentApiService } from '../../services/studentApiService_new';
+import studentApiService from '../../services/studentApiService';
 
 const FoodOrderCheckoutScreen = ({ navigation, route }) => {
     const { cart, provider, totalAmount } = route.params;

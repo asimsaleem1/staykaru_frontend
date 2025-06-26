@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Ionicons } from '@expo/vector-icons';
 import StudentNavigation from '../components/student/StudentNavigation';
+import RecentActivitiesSection from '../components/student/RecentActivitiesSection';
 import authService from '../services/authService';
 import studentApiService from '../services/studentApiService';
 import { notificationService } from '../services/notificationService';

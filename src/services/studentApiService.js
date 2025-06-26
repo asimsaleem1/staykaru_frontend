@@ -817,6 +817,138 @@ class StudentApiService {
     throw new Error('Menu details temporarily unavailable');
   }
 
+  // Student Bookings with enhanced fallback
+  async getStudentBookings() {
+    try {
+      const endpoints = [
+        '/student/bookings',
+        '/bookings/user',
+        '/my/bookings',
+        '/bookings'
+      ];
+      
+      let apiBookings = [];
+      
+      try {
+        apiBookings = await this.apiCall(endpoints);
+        if (!Array.isArray(apiBookings) && apiBookings.bookings) {
+          apiBookings = apiBookings.bookings;
+        }
+        if (!Array.isArray(apiBookings)) {
+          apiBookings = [];
+        }
+      } catch (error) {
+        console.warn('Student bookings endpoints failed, using fallback:', error);
+        apiBookings = [];
+      }
+      
+      // Get locally stored bookings
+      const localBookings = await this.getLocalBookings();
+      
+      // Merge local and API bookings
+      const allBookings = [...localBookings];
+      
+      apiBookings.forEach(apiBooking => {
+        const exists = localBookings.some(localBooking => 
+          (localBooking._id === apiBooking._id) || 
+          (localBooking.id === apiBooking.id)
+        );
+        
+        if (!exists) {
+          allBookings.push(apiBooking);
+        }
+      });
+      
+      // Sort by creation date (newest first)
+      allBookings.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.createdAt || a.bookingDate || 0);
+        const dateB = new Date(b.created_at || b.createdAt || b.bookingDate || 0);
+        return dateB - dateA;
+      });
+      
+      return allBookings;
+    } catch (error) {
+      console.error('Error in getStudentBookings:', error);
+      return await this.getLocalBookings();
+    }
+  }
+
+  // Alias method for compatibility
+  async getMyBookings() {
+    return await this.getStudentBookings();
+  }
+
+  // Student Orders with enhanced fallback
+  async getStudentOrders() {
+    return await this.getOrderHistory();
+  }
+
+  // Student Reviews
+  async getStudentReviews() {
+    try {
+      const endpoints = [
+        '/student/reviews',
+        '/reviews/user',
+        '/my/reviews',
+        '/reviews'
+      ];
+      
+      return await this.apiCall(endpoints);
+    } catch (error) {
+      console.warn('Student reviews endpoints failed, using fallback:', error);
+      return [];
+    }
+  }
+
+  // Student Notifications
+  async getStudentNotifications() {
+    try {
+      const endpoints = [
+        '/student/notifications',
+        '/notifications/user',
+        '/my/notifications',
+        '/notifications'
+      ];
+      
+      return await this.apiCall(endpoints);
+    } catch (error) {
+      console.warn('Student notifications endpoints failed, using fallback:', error);
+      return [];
+    }
+  }
+
+  // Logout method
+  async logout() {
+    try {
+      const endpoints = [
+        '/auth/logout',
+        '/logout',
+        '/student/logout'
+      ];
+      
+      try {
+        await this.apiCall(endpoints, { method: 'POST' });
+      } catch (error) {
+        console.warn('Logout API failed, clearing local data:', error);
+      }
+      
+      // Clear local storage
+      await AsyncStorage.multiRemove([
+        'user_orders',
+        'user_bookings',
+        'recent_activities',
+        'notifications',
+        'authToken'
+      ]);
+      
+      console.log('Logout completed, local data cleared');
+      return { success: true, message: 'Logged out successfully' };
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw error;
+    }
+  }
+
   // Create Order (FAILED - 400)
   async createOrder(orderData) {
     console.warn('Create order endpoint not available (400)');
