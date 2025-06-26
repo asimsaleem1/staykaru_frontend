@@ -38,8 +38,23 @@ const ChatScreen = ({ navigation, route }) => {
                 setLoading(true);
             }
 
-            const data = await studentApiService.getChatMessages(recipientId);
-            setMessages(data);
+            // Ensure we have a valid recipient ID
+            let validRecipientId = recipientId;
+            if (!validRecipientId || validRecipientId === 'undefined' || validRecipientId === 'null') {
+                console.warn('Invalid recipient ID, using default chat');
+                validRecipientId = 'support_chat';
+            }
+
+            const data = await studentApiService.getChatMessages(validRecipientId);
+            
+            // Handle different response formats
+            if (data && data.messages && Array.isArray(data.messages)) {
+                setMessages(data.messages);
+            } else if (Array.isArray(data)) {
+                setMessages(data);
+            } else {
+                throw new Error('Invalid messages format received');
+            }
         } catch (error) {
             console.error('Error loading messages:', error);
             // Create demo messages if API fails
@@ -85,6 +100,13 @@ const ChatScreen = ({ navigation, route }) => {
         const messageText = newMessage.trim();
         setNewMessage('');
 
+        // Ensure we have a valid recipient ID
+        let validRecipientId = recipientId;
+        if (!validRecipientId || validRecipientId === 'undefined' || validRecipientId === 'null') {
+            console.warn('Invalid recipient ID, using default for sending message');
+            validRecipientId = 'support_chat';
+        }
+
         // Optimistically add message to UI
         const tempMessage = {
             _id: Date.now().toString(),
@@ -98,16 +120,19 @@ const ChatScreen = ({ navigation, route }) => {
 
         try {
             setSending(true);
-            const sentMessage = await studentApiService.sendMessage({
-                recipientId,
-                text: messageText
-            });
+            // Fix: Pass separate parameters instead of object
+            const sentMessage = await studentApiService.sendMessage(validRecipientId, messageText);
 
             // Update the temporary message with the sent message
             setMessages(prev => 
                 prev.map(msg => 
                     msg._id === tempMessage._id 
-                        ? { ...sentMessage, sender: 'me', status: 'sent' }
+                        ? { 
+                            ...tempMessage, 
+                            _id: sentMessage.message?._id || tempMessage._id,
+                            status: 'sent',
+                            timestamp: sentMessage.message?.timestamp || tempMessage.timestamp
+                          }
                         : msg
                 )
             );

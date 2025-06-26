@@ -217,8 +217,10 @@ const RecommendationSystemScreen = ({ navigation }) => {
               break;
           }
           
-          // City matching (high priority)
-          if (acc.city && acc.city.toLowerCase() === preferences.city.toLowerCase()) {
+          // City matching (high priority) - Safe string comparison
+          if (acc.city && preferences.city && 
+              typeof acc.city === 'string' && typeof preferences.city === 'string' &&
+              acc.city.toLowerCase() === preferences.city.toLowerCase()) {
             score += 30;
           }
           
@@ -272,8 +274,10 @@ const RecommendationSystemScreen = ({ navigation }) => {
         .map(provider => {
           let score = 0;
           
-          // City matching (high priority)
-          if (provider.city && provider.city.toLowerCase() === preferences.city.toLowerCase()) {
+          // City matching (high priority) - Safe string comparison
+          if (provider.city && preferences.city && 
+              typeof provider.city === 'string' && typeof preferences.city === 'string' &&
+              provider.city.toLowerCase() === preferences.city.toLowerCase()) {
             score += 30;
           }
           

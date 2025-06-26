@@ -16,9 +16,99 @@ import { Ionicons } from '@expo/vector-icons';
 import StudentNavigation from '../components/student/StudentNavigation';
 import authService from '../services/authService';
 import studentApiService from '../services/studentApiService';
+import { notificationService } from '../services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
+
+// Recent Activities Component
+const RecentActivitiesSection = ({ navigation }) => {
+    const [activities, setActivities] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        loadRecentActivities();
+    }, []);
+
+    const loadRecentActivities = async () => {
+        try {
+            setLoading(true);
+            const recentActivities = await studentApiService.getRecentActivities();
+            setActivities(recentActivities.slice(0, 5)); // Show only last 5 activities
+        } catch (error) {
+            console.warn('Failed to load recent activities:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getActivityIcon = (type) => {
+        switch (type) {
+            case 'booking_created':
+                return { name: 'bed-outline', color: '#4A90E2' };
+            case 'booking_cancelled':
+                return { name: 'close-circle-outline', color: '#e74c3c' };
+            case 'order_placed':
+                return { name: 'restaurant-outline', color: '#FF6B35' };
+            case 'order_cancelled':
+                return { name: 'close-circle-outline', color: '#e74c3c' };
+            case 'payment_success':
+                return { name: 'checkmark-circle-outline', color: '#27ae60' };
+            default:
+                return { name: 'information-circle-outline', color: '#666' };
+        }
+    };
+
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffHours < 1) return 'Just now';
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    };
+
+    if (activities.length === 0) return null;
+
+    return (
+        <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('ActivityHistory')}>
+                    <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+            </View>
+            <View style={styles.activityContainer}>
+                {activities.map((activity, index) => {
+                    const icon = getActivityIcon(activity.type);
+                    return (
+                        <View key={activity.id || index} style={styles.activityItem}>
+                            <View style={styles.activityIconContainer}>
+                                <Ionicons 
+                                    name={icon.name} 
+                                    size={20} 
+                                    color={icon.color} 
+                                />
+                            </View>
+                            <View style={styles.activityContent}>
+                                <Text style={styles.activityMessage} numberOfLines={2}>
+                                    {activity.message}
+                                </Text>
+                                <Text style={styles.activityTime}>
+                                    {formatTimestamp(activity.timestamp)}
+                                </Text>
+                            </View>
+                        </View>
+                    );
+                })}
+            </View>
+        </View>
+    );
+};
 
 const StudentDashboard = ({ navigation }) => {
     const [user, setUser] = useState(null);
@@ -31,6 +121,22 @@ const StudentDashboard = ({ navigation }) => {
     });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+    useEffect(() => {
+        loadDashboardData();
+        loadNotificationCount();
+    }, []);
+
+    // Load notification count
+    const loadNotificationCount = async () => {
+        try {
+            const count = await notificationService.getUnreadCount();
+            setUnreadNotifications(count);
+        } catch (error) {
+            console.warn('Failed to load notification count:', error);
+        }
+    };
 
     useEffect(() => {
         loadDashboardData();
@@ -174,9 +280,27 @@ const StudentDashboard = ({ navigation }) => {
                             <Text style={styles.userName}>{user?.name || 'Student'}</Text>
                             <Text style={styles.userRole}>Student Dashboard</Text>
                         </View>
-                        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-                            <Icon name="logout" size={24} color="#fff" />
-                        </TouchableOpacity>
+                        <View style={styles.headerActions}>
+                            {/* Notification Icon */}
+                            <TouchableOpacity 
+                                onPress={() => navigation.navigate('Notifications')}
+                                style={styles.notificationButton}
+                            >
+                                <Ionicons name="notifications" size={24} color="#fff" />
+                                {unreadNotifications > 0 && (
+                                    <View style={styles.notificationBadge}>
+                                        <Text style={styles.notificationBadgeText}>
+                                            {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                                        </Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                            
+                            {/* Profile/Logout */}
+                            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+                                <Icon name="logout" size={24} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </LinearGradient>
 
@@ -427,7 +551,11 @@ const StudentDashboard = ({ navigation }) => {
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
-                    </View>                )}
+                    </View>
+                )}
+
+                {/* Recent Activity Section */}
+                <RecentActivitiesSection navigation={navigation} />
             </ScrollView>
             
             {/* Bottom Navigation */}
@@ -483,6 +611,35 @@ const styles = StyleSheet.create({
         fontSize: 14,
         opacity: 0.8,
         marginTop: 2,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    notificationButton: {
+        padding: 10,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginRight: 8,
+        position: 'relative',
+    },
+    notificationBadge: {
+        position: 'absolute',
+        top: 5,
+        right: 5,
+        backgroundColor: '#ff4757',
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    notificationBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     logoutButton: {
         padding: 10,
@@ -774,6 +931,42 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: 'bold',
         textAlign: 'center',
+    },
+    // Recent Activities Styles
+    activityContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginTop: 8,
+    },
+    activityItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f3f4',
+    },
+    activityIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f8f9fa',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    activityContent: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    activityMessage: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '500',
+        marginBottom: 4,
+    },
+    activityTime: {
+        fontSize: 12,
+        color: '#6c757d',
     },
 });
 

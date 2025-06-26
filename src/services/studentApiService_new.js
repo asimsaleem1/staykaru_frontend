@@ -4,6 +4,7 @@
 import { API_BASE_URL } from '../utils/constants';
 import authService from './authService';
 import { realTimeApiService } from './realTimeApiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class StudentApiService {
   constructor() {
@@ -770,9 +771,11 @@ class StudentApiService {
     }
   }
 
-  // 9. Bookings with fallback
+  // 9. Bookings with fallback + local storage integration
   async getBookingHistory() {
     try {
+      let apiBookings = [];
+      
       const endpoints = [
         '/student/bookings',
         '/bookings/user',
@@ -780,10 +783,49 @@ class StudentApiService {
         '/bookings'
       ];
       
-      return await this.apiCall(endpoints);
+      try {
+        apiBookings = await this.apiCall(endpoints);
+        if (!Array.isArray(apiBookings) && apiBookings.bookings) {
+          apiBookings = apiBookings.bookings;
+        }
+        if (!Array.isArray(apiBookings)) {
+          apiBookings = [];
+        }
+      } catch (error) {
+        console.warn('Booking history endpoints failed, using fallback:', error);
+        apiBookings = this.generateFallbackData('bookings');
+      }
+      
+      // Get locally stored bookings
+      const localBookings = await this.getLocalBookings();
+      
+      // Merge local and API bookings, removing duplicates
+      const allBookings = [...localBookings];
+      
+      apiBookings.forEach(apiBooking => {
+        const exists = localBookings.some(localBooking => 
+          (localBooking._id === apiBooking._id) || 
+          (localBooking.id === apiBooking.id) ||
+          (localBooking.bookingId === apiBooking.bookingId)
+        );
+        
+        if (!exists) {
+          allBookings.push(apiBooking);
+        }
+      });
+      
+      // Sort by creation date (newest first)
+      allBookings.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at || a.bookingDate || 0);
+        const dateB = new Date(b.createdAt || b.created_at || b.bookingDate || 0);
+        return dateB - dateA;
+      });
+      
+      return allBookings;
     } catch (error) {
-      console.warn('Booking history endpoints failed, using fallback:', error);
-      return this.generateFallbackData('bookings');
+      console.error('Error in getBookingHistory:', error);
+      // Fallback to local bookings only
+      return await this.getLocalBookings();
     }
   }
 
@@ -800,41 +842,98 @@ class StudentApiService {
     return this.getStudentNotifications();
   }
 
-  // 10. Create Booking with fallback
+  // 10. Create Booking with fallback + local storage
   async createBooking(bookingData) {
     try {
+      let createdBooking = null;
+      
       const endpoints = ['/bookings', '/booking', '/student/bookings'];
       
       for (const endpoint of endpoints) {
         try {
-          return await this.apiCall(endpoint, {
+          createdBooking = await this.apiCall(endpoint, {
             method: 'POST',
             body: JSON.stringify(bookingData)
           });
+          break;
         } catch (error) {
           continue;
         }
       }
       
-      // Fallback simulation
-      console.warn('Booking creation API unavailable, simulating booking');
-      return {
-        id: `booking_${Date.now()}`,
-        ...bookingData,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        confirmationCode: `BK${Date.now().toString().slice(-6)}`,
-        isSimulated: true
-      };
+      // If API failed, create simulated booking
+      if (!createdBooking) {
+        console.warn('Booking creation API unavailable, simulating booking');
+        const bookingId = `BK${Date.now().toString().slice(-6)}`;
+        
+        createdBooking = {
+          _id: bookingId,
+          id: bookingId,
+          bookingId: bookingId,
+          accommodation: {
+            _id: bookingData.accommodationId,
+            name: bookingData.accommodationName || 'Accommodation',
+            location: bookingData.accommodationLocation || 'Location',
+            images: ['https://picsum.photos/300/200?random=acc']
+          },
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          guests: bookingData.guests || 1,
+          totalAmount: bookingData.totalAmount,
+          status: 'pending',
+          paymentStatus: 'pending',
+          createdAt: new Date().toISOString(),
+          confirmationCode: bookingId,
+          isSimulated: true,
+          type: 'accommodation'
+        };
+      }
+      
+      // Store booking locally for immediate retrieval  
+      await this.storeBookingLocally(createdBooking);
+      
+      return createdBooking;
     } catch (error) {
       console.error('Error creating booking:', error);
       throw error;
     }
   }
 
-  // 12. Orders with fallback
+  // Store booking in local storage
+  async storeBookingLocally(booking) {
+    try {
+      const existingBookings = await AsyncStorage.getItem('user_bookings');
+      let bookings = existingBookings ? JSON.parse(existingBookings) : [];
+      
+      bookings.unshift(booking);
+      
+      if (bookings.length > 50) {
+        bookings = bookings.slice(0, 50);
+      }
+      
+      await AsyncStorage.setItem('user_bookings', JSON.stringify(bookings));
+      console.log('Booking stored locally:', booking._id || booking.id);
+    } catch (error) {
+      console.warn('Failed to store booking locally:', error);
+    }
+  }
+
+  // Get locally stored bookings
+  async getLocalBookings() {
+    try {
+      const storedBookings = await AsyncStorage.getItem('user_bookings');
+      return storedBookings ? JSON.parse(storedBookings) : [];
+    } catch (error) {
+      console.warn('Failed to get local bookings:', error);
+      return [];
+    }
+  }
+
+  // 12. Orders with fallback + local storage integration
   async getOrderHistory() {
     try {
+      let apiOrders = [];
+      
       const endpoints = [
         '/student/orders',
         '/orders/user',
@@ -842,16 +941,57 @@ class StudentApiService {
         '/orders'
       ];
       
-      return await this.apiCall(endpoints);
+      try {
+        apiOrders = await this.apiCall(endpoints);
+        if (!Array.isArray(apiOrders) && apiOrders.orders) {
+          apiOrders = apiOrders.orders;
+        }
+        if (!Array.isArray(apiOrders)) {
+          apiOrders = [];
+        }
+      } catch (error) {
+        console.warn('Order history endpoints failed, using fallback:', error);
+        apiOrders = this.generateFallbackData('orders');
+      }
+      
+      // Get locally stored orders
+      const localOrders = await this.getLocalOrders();
+      
+      // Merge local and API orders, removing duplicates
+      const allOrders = [...localOrders];
+      
+      apiOrders.forEach(apiOrder => {
+        const exists = localOrders.some(localOrder => 
+          (localOrder._id === apiOrder._id) || 
+          (localOrder.id === apiOrder.id) ||
+          (localOrder.orderId === apiOrder.orderId)
+        );
+        
+        if (!exists) {
+          allOrders.push(apiOrder);
+        }
+      });
+      
+      // Sort by creation date (newest first)
+      allOrders.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at || a.orderDate || 0);
+        const dateB = new Date(b.createdAt || b.created_at || b.orderDate || 0);
+        return dateB - dateA;
+      });
+      
+      return allOrders;
     } catch (error) {
-      console.warn('Order history endpoints failed, using fallback:', error);
-      return this.generateFallbackData('orders');
+      console.error('Error in getOrderHistory:', error);
+      // Fallback to local orders only
+      return await this.getLocalOrders();
     }
   }
 
-  // 12.1. Create Food Order (specific for food orders) with fallback
+  // 12.1. Create Food Order (specific for food orders) with fallback + local storage
   async createFoodOrder(orderData) {
     try {
+      let createdOrder = null;
+      
       const endpoints = [
         '/food/orders',
         '/orders/food', 
@@ -861,46 +1001,93 @@ class StudentApiService {
       
       for (const endpoint of endpoints) {
         try {
-          return await this.apiCall(endpoint, {
+          createdOrder = await this.apiCall(endpoint, {
             method: 'POST',
             body: JSON.stringify(orderData)
           });
+          break;
         } catch (error) {
           continue;
         }
       }
       
-      // Fallback simulation for food orders
-      console.warn('Food order creation API unavailable, simulating food order');
-      const subtotal = orderData.subtotal || orderData.items?.reduce((sum, item) => 
-        sum + ((item.price || 0) * (item.quantity || 1)), 0) || 0;
-      const deliveryFee = orderData.deliveryFee || 50;
-      const total = orderData.totalAmount || (subtotal + deliveryFee);
+      // If API failed, create simulated order
+      if (!createdOrder) {
+        console.warn('Food order creation API unavailable, simulating food order');
+        const subtotal = orderData.subtotal || orderData.items?.reduce((sum, item) => 
+          sum + ((item.price || 0) * (item.quantity || 1)), 0) || 0;
+        const deliveryFee = orderData.deliveryFee || 50;
+        const total = orderData.totalAmount || (subtotal + deliveryFee);
+        
+        const orderId = `FO${Date.now().toString().slice(-6)}`;
+        
+        createdOrder = {
+          _id: orderId,
+          id: orderId,
+          orderId: orderId,
+          provider: {
+            _id: orderData.providerId,
+            name: orderData.providerName || 'Food Provider',
+            image: 'https://picsum.photos/100/100?random=food'
+          },
+          items: orderData.items || [],
+          deliveryAddress: orderData.deliveryAddress,
+          phone: orderData.phone,
+          notes: orderData.notes || '',
+          paymentMethod: orderData.paymentMethod || 'cash',
+          subtotal: subtotal,
+          deliveryFee: deliveryFee,
+          totalAmount: total,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          estimatedDelivery: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+          orderNumber: orderId,
+          isSimulated: true,
+          type: 'food'
+        };
+      }
       
-      const orderId = `FO${Date.now().toString().slice(-6)}`;
+      // Store order locally for immediate retrieval
+      await this.storeOrderLocally(createdOrder);
       
-      return {
-        id: orderId,
-        orderId: orderId,
-        providerId: orderData.providerId,
-        items: orderData.items || [],
-        deliveryAddress: orderData.deliveryAddress,
-        phone: orderData.phone,
-        notes: orderData.notes || '',
-        paymentMethod: orderData.paymentMethod || 'cash',
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        totalAmount: total,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        estimatedDelivery: '30-45 minutes',
-        orderNumber: orderId,
-        isSimulated: true,
-        type: 'food'
-      };
+      return createdOrder;
     } catch (error) {
       console.error('Error creating food order:', error);
       throw error;
+    }
+  }
+
+  // Store order in local storage for immediate access
+  async storeOrderLocally(order) {
+    try {
+      // Get existing orders
+      const existingOrders = await AsyncStorage.getItem('user_orders');
+      let orders = existingOrders ? JSON.parse(existingOrders) : [];
+      
+      // Add new order to the beginning (newest first)
+      orders.unshift(order);
+      
+      // Keep only last 50 orders to avoid storage bloat
+      if (orders.length > 50) {
+        orders = orders.slice(0, 50);
+      }
+      
+      // Store updated orders
+      await AsyncStorage.setItem('user_orders', JSON.stringify(orders));
+      console.log('Order stored locally:', order._id || order.id);
+    } catch (error) {
+      console.warn('Failed to store order locally:', error);
+    }
+  }
+
+  // Get locally stored orders
+  async getLocalOrders() {
+    try {
+      const storedOrders = await AsyncStorage.getItem('user_orders');
+      return storedOrders ? JSON.parse(storedOrders) : [];
+    } catch (error) {
+      console.warn('Failed to get local orders:', error);
+      return [];
     }
   }
 
@@ -1268,6 +1455,12 @@ class StudentApiService {
 
   async getChatMessages(recipientId) {
     try {
+      // Ensure we have a valid recipient ID
+      if (!recipientId || recipientId === 'undefined') {
+        console.warn('Invalid recipient ID provided to getChatMessages:', recipientId);
+        return this.getFallbackChatMessages('default_recipient');
+      }
+
       const data = await this.apiCall([
         `/chat/messages/${recipientId}`,
         `/messages/${recipientId}`,
@@ -1277,58 +1470,71 @@ class StudentApiService {
       return data.messages || data;
     } catch (error) {
       console.warn('Chat messages API unavailable, using fallback data');
-      
-      return {
-        messages: [
-          {
-            _id: "1",
-            text: "Hello! How can I help you today?",
-            sender: recipientId,
-            recipient: "current_user",
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-            read: true
-          },
-          {
-            _id: "2", 
-            text: "Hi! I'm looking for accommodation details.",
-            sender: "current_user",
-            recipient: recipientId,
-            timestamp: new Date(Date.now() - 3000000).toISOString(),
-            read: true
-          },
-          {
-            _id: "3",
-            text: "Sure! I can help you with that. What type of accommodation are you looking for?",
-            sender: recipientId,
-            recipient: "current_user", 
-            timestamp: new Date(Date.now() - 2400000).toISOString(),
-            read: true
-          },
-          {
-            _id: "4",
-            text: "I need a single room near the university.",
-            sender: "current_user",
-            recipient: recipientId,
-            timestamp: new Date(Date.now() - 1800000).toISOString(),
-            read: true
-          },
-          {
-            _id: "5",
-            text: "Great! We have several options available. Would you like me to show you some properties?",
-            sender: recipientId,
-            recipient: "current_user",
-            timestamp: new Date(Date.now() - 1200000).toISOString(),
-            read: false
-          }
-        ],
-        total: 5,
-        unread_count: 1
-      };
+      return this.getFallbackChatMessages(recipientId);
     }
+  }
+
+  getFallbackChatMessages(recipientId) {
+    return {
+      messages: [
+        {
+          _id: "1",
+          text: "Hello! How can I help you today?",
+          sender: recipientId || "support",
+          recipient: "current_user",
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          read: true
+        },
+        {
+          _id: "2", 
+          text: "Hi! I'm looking for accommodation details.",
+          sender: "current_user",
+          recipient: recipientId || "support",
+          timestamp: new Date(Date.now() - 3000000).toISOString(),
+          read: true
+        },
+        {
+          _id: "3",
+          text: "Sure! I can help you with that. What type of accommodation are you looking for?",
+          sender: recipientId || "support",
+          recipient: "current_user", 
+          timestamp: new Date(Date.now() - 2400000).toISOString(),
+          read: true
+        },
+        {
+          _id: "4",
+          text: "I need a single room near the university.",
+          sender: "current_user",
+          recipient: recipientId || "support",
+          timestamp: new Date(Date.now() - 1800000).toISOString(),
+          read: true
+        },
+        {
+          _id: "5",
+          text: "Great! We have several options available. Would you like me to show you some properties?",
+          sender: recipientId || "support",
+          recipient: "current_user",
+          timestamp: new Date(Date.now() - 1200000).toISOString(),
+          read: false
+        }
+      ],
+      total: 5,
+      unread_count: 1
+    };
   }
 
   async sendMessage(recipientId, message) {
     try {
+      // Ensure we have valid parameters
+      if (!recipientId || recipientId === 'undefined') {
+        console.warn('Invalid recipient ID provided to sendMessage:', recipientId);
+        recipientId = 'default_recipient';
+      }
+
+      if (!message || !message.trim()) {
+        throw new Error('Message content is required');
+      }
+
       const data = await this.apiCall([
         `/chat/messages`,
         `/messages`,
@@ -1337,7 +1543,7 @@ class StudentApiService {
         method: 'POST',
         body: JSON.stringify({
           recipient: recipientId,
-          text: message,
+          text: message.trim(),
           timestamp: new Date().toISOString()
         })
       });
@@ -1350,12 +1556,13 @@ class StudentApiService {
         success: true,
         message: {
           _id: `msg_${Date.now()}`,
-          text: message,
+          text: message.trim(),
           sender: "current_user",
-          recipient: recipientId,
+          recipient: recipientId || "default_recipient",
           timestamp: new Date().toISOString(),
           read: false,
-          delivered: true
+          delivered: true,
+          isSimulated: true
         }
       };
     }

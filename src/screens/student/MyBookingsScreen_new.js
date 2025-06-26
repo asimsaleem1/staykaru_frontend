@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { studentApiService } from '../../services/studentApiService_new';
+import { studentApiService } from '../../services/studentApiService';
 
 const MyBookingsScreen = ({ navigation }) => {
     const [bookings, setBookings] = useState([]);

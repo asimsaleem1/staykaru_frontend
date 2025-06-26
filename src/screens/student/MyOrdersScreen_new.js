@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { studentApiService } from '../../services/studentApiService_new';
+import { studentApiService } from '../../services/studentApiService';
 
-const MyOrdersScreen = ({ navigation }) => {
+const MyOrdersScreen = ({ navigation, route }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -23,6 +23,24 @@ const MyOrdersScreen = ({ navigation }) => {
     useEffect(() => {
         loadOrders();
     }, []);
+
+    // Handle navigation params for refreshing
+    useEffect(() => {
+        if (route.params?.refresh) {
+            console.log('Refreshing orders due to navigation param');
+            loadOrders(true);
+        }
+    }, [route.params?.refresh]);
+
+    // Add focus listener to refresh data when screen comes into focus
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            console.log('MyOrders screen focused, refreshing data');
+            loadOrders(true);
+        });
+
+        return unsubscribe;
+    }, [navigation]);
 
     const loadOrders = async (isRefresh = false) => {
         try {

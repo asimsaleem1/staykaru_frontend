@@ -48,6 +48,7 @@ import UnifiedMapScreen from '../screens/student/UnifiedMapScreen';
 import AccommodationsListScreen_new from '../screens/student/AccommodationsListScreen_new';
 import AccommodationDetailsScreen_new from '../screens/student/AccommodationDetailsScreen_new';
 import MyBookingsScreen_new from '../screens/student/MyBookingsScreen_new';
+import BookingDetailsScreen from '../screens/student/BookingDetailsScreen';
 import FoodProvidersScreen_new from '../screens/student/FoodProvidersScreen_new';
 import FoodProviderDetailsScreen_new from '../screens/student/FoodProviderDetailsScreen_new';
 import FoodOrderCheckoutScreen_new from '../screens/student/FoodOrderCheckoutScreen_new';
@@ -214,6 +215,13 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="MyBookings" 
           component={MyBookingsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen 
+          name="BookingDetails" 
+          component={BookingDetailsScreen}
           options={{ 
             headerShown: false
           }}

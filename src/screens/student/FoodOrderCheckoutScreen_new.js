@@ -83,6 +83,7 @@ const FoodOrderCheckoutScreen = ({ navigation, route }) => {
 
             const orderPayload = {
                 providerId: provider._id || provider.id,
+                providerName: provider.name,
                 items: cart.map(item => ({
                     itemId: item._id,
                     name: item.name,
@@ -104,16 +105,20 @@ const FoodOrderCheckoutScreen = ({ navigation, route }) => {
                 'Order Placed Successfully!',
                 `Your order has been ${result.isSimulated ? 'submitted' : 'confirmed'}.\n` +
                 `${result.isSimulated ? 'Simulation' : 'Order'} ID: ${result.orderId || result.id}\n` +
-                `Estimated delivery: ${result.estimatedDelivery || '30-45 minutes'}`,
+                `Estimated delivery: ${typeof result.estimatedDelivery === 'string' ? result.estimatedDelivery : '30-45 minutes'}`,
                 [
                     {
-                        text: 'Track Order',
+                        text: 'View My Orders',
                         onPress: () => {
-                            navigation.navigate('MyOrders');
+                            // Navigate to MyOrders and refresh the data
+                            navigation.navigate('MyOrders', { 
+                                refresh: true,
+                                newOrderId: result._id || result.id || result.orderId
+                            });
                         }
                     },
                     {
-                        text: 'OK',
+                        text: 'Continue Shopping',
                         onPress: () => {
                             navigation.popToTop();
                         }
