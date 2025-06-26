@@ -16,16 +16,6 @@ StayKaru is a comprehensive React Native application designed specifically for s
 
 ### 👤 Admin Module
 
-**Login Credentials:**
-
-- **Email:** `admin@staykaru.com`
-- **Password:** `admin123`
-
-**Alternative Admin:**
-
-- **Email:** `assaleemofficial@gmail.com`
-- **Password:** `admin123`
-
 **Features:**
 
 - ✅ Dashboard with analytics
@@ -314,7 +304,7 @@ expo build:android --type app-bundle
 
 For technical support:
 
-- **Email**: support@staykaru.com
+- **Email**: assaleemofficial@gmail.com
 - **Documentation**: Check project files
 - **Backend API**: Fully deployed and functional
 
@@ -568,7 +558,7 @@ const ROLES = {
 
 For technical support or questions:
 
-- **Email**: support@staykaru.com
+- **Email**: assaleemofficial@gmail.com
 - **Documentation**: Available in project files
 - **Backend API**: Fully deployed and functional
 
