@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayKaru Admin Module Test Suite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+        }
+        .test-section h2 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .test-item {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            background: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+        .test-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .test-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .test-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .status-pending {
+            background: #ffc107;
+            color: #856404;
+        }
+        .status-testing {
+            background: #17a2b8;
+            color: white;
+        }
+        .status-passed {
+            background: #28a745;
+            color: white;
+        }
+        .status-failed {
+            background: #dc3545;
+            color: white;
+        }
+        .test-result {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: transform 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .summary {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+        .summary.show {
+            display: block;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            text-align: center;
+        }
+        .stat-item {
+            padding: 10px;
+            border-radius: 6px;
+            background: white;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .logs {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin-bottom: 2px;
+        }
+        .log-success { color: #48bb78; }
+        .log-error { color: #f56565; }
+        .log-warning { color: #ed8936; }
+        .log-info { color: #4299e1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 StayKaru Admin Module Test Suite</h1>
+            <p>Comprehensive Testing of All Admin Endpoints</p>
+        </div>
+        
+        <div class="content">
+            <div class="controls">
+                <button class="btn" onclick="runAllTests()">Run All Tests</button>
+                <button class="btn" onclick="runSingleCategory()">Run by Category</button>
+                <button class="btn" onclick="clearResults()">Clear Results</button>
+            </div>
+            
+            <div class="summary" id="summary">
+                <h3>Test Results Summary</h3>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalTests">0</div>
+                        <div class="stat-label">Total Tests</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="passedTests" style="color: #28a745;">0</div>
+                        <div class="stat-label">Passed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="failedTests" style="color: #dc3545;">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="successRate">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>📊 Dashboard Endpoints</h2>
+                <div class="test-grid" id="dashboardTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>👥 User Management Endpoints</h2>
+                <div class="test-grid" id="userTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🏠 Property Management Endpoints</h2>
+                <div class="test-grid" id="propertyTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>📅 Booking Management Endpoints</h2>
+                <div class="test-grid" id="bookingTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🛍️ Order Management Endpoints</h2>
+                <div class="test-grid" id="orderTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>💰 Financial Management Endpoints</h2>
+                <div class="test-grid" id="financialTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🛡️ Content Moderation Endpoints</h2>
+                <div class="test-grid" id="moderationTests"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>📈 Analytics Endpoints</h2>
+                <div class="test-grid" id="analyticsTests"></div>
+            </div>
+            
+            <div class="logs" id="logs">
+                <div class="log-entry log-info">🚀 Admin Module Test Suite Ready</div>
+                <div class="log-entry log-info">Click "Run All Tests" to start comprehensive testing</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://staykaru-backend-60ed08adb2a7.herokuapp.com/api';
+        const TOKEN = 'mock-admin-token'; // Replace with real token if needed
+        
+        const testDefinitions = {
+            dashboard: [
+                { name: 'Dashboard Data', endpoint: '/dashboard', method: 'GET' },
+                { name: 'System Health', endpoint: '/admin/system/health', method: 'GET' }
+            ],
+            user: [
+                { name: 'All Users', endpoint: '/users', method: 'GET' },
+                { name: 'Students', endpoint: '/users/students', method: 'GET' },
+                { name: 'Landlords', endpoint: '/users/landlords', method: 'GET' },
+                { name: 'Food Providers', endpoint: '/users/food-providers', method: 'GET' }
+            ],
+            property: [
+                { name: 'All Accommodations', endpoint: '/accommodations', method: 'GET' },
+                { name: 'Pending Accommodations', endpoint: '/accommodations/pending', method: 'GET' }
+            ],
+            booking: [
+                { name: 'All Bookings', endpoint: '/bookings', method: 'GET' },
+                { name: 'Recent Bookings', endpoint: '/bookings/recent', method: 'GET' }
+            ],
+            order: [
+                { name: 'All Orders', endpoint: '/orders', method: 'GET' },
+                { name: 'Recent Orders', endpoint: '/orders/recent', method: 'GET' }
+            ],
+            financial: [
+                { name: 'Revenue Data', endpoint: '/admin/revenue', method: 'GET' },
+                { name: 'Payment Data', endpoint: '/admin/payments', method: 'GET' }
+            ],
+            moderation: [
+                { name: 'Reported Content', endpoint: '/admin/content/reported', method: 'GET' },
+                { name: 'Content Reviews', endpoint: '/admin/content/reviews', method: 'GET' }
+            ],
+            analytics: [
+                { name: 'System Analytics', endpoint: '/admin/analytics/system', method: 'GET' },
+                { name: 'User Statistics', endpoint: '/admin/analytics/users', method: 'GET' }
+            ]
+        };
+        
+        let testResults = {};
+        let testStats = { total: 0, passed: 0, failed: 0 };
+        
+        function initializeTests() {
+            Object.keys(testDefinitions).forEach(category => {
+                const container = document.getElementById(category + 'Tests');
+                testDefinitions[category].forEach(test => {
+                    const testId = `${category}_${test.name.replace(/\s+/g, '_').toLowerCase()}`;
+                    testStats.total++;
+                    
+                    const testElement = document.createElement('div');
+                    testElement.className = 'test-item';
+                    testElement.id = testId;
+                    testElement.innerHTML = `
+                        <div class="test-name">${test.name}</div>
+                        <div class="test-status status-pending">PENDING</div>
+                        <div class="test-result">
+                            <strong>Endpoint:</strong> ${test.method} ${test.endpoint}<br>
+                            <strong>Status:</strong> Waiting to run...
+                        </div>
+                    `;
+                    container.appendChild(testElement);
+                    
+                    testResults[testId] = { status: 'pending', ...test };
+                });
+            });
+            
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('passedTests').textContent = testStats.passed;
+            document.getElementById('failedTests').textContent = testStats.failed;
+            document.getElementById('successRate').textContent = 
+                testStats.total > 0 ? Math.round((testStats.passed / testStats.total) * 100) + '%' : '0%';
+        }
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        async function runTest(testId) {
+            const test = testResults[testId];
+            const element = document.getElementById(testId);
+            
+            // Update UI to show testing
+            element.querySelector('.test-status').className = 'test-status status-testing';
+            element.querySelector('.test-status').textContent = 'TESTING';
+            element.querySelector('.test-result').innerHTML = `
+                <strong>Endpoint:</strong> ${test.method} ${test.endpoint}<br>
+                <strong>Status:</strong> Running test...
+            `;
+            
+            log(`🧪 Testing: ${test.name}`, 'info');
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch(API_BASE_URL + test.endpoint, {
+                    method: test.method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TOKEN}`
+                    }
+                });
+                
+                const duration = Date.now() - startTime;
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Test passed
+                    testResults[testId].status = 'passed';
+                    testResults[testId].response = data;
+                    testResults[testId].duration = duration;
+                    testStats.passed++;
+                    
+                    element.querySelector('.test-status').className = 'test-status status-passed';
+                    element.querySelector('.test-status').textContent = 'PASSED';
+                    element.querySelector('.test-result').innerHTML = `
+                        <strong>Endpoint:</strong> ${test.method} ${test.endpoint}<br>
+                        <strong>Status:</strong> ✅ Success (${duration}ms)<br>
+                        <strong>Response:</strong> ${JSON.stringify(data).substring(0, 100)}...
+                    `;
+                    
+                    log(`✅ ${test.name} - PASSED (${duration}ms)`, 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                // Test failed
+                testResults[testId].status = 'failed';
+                testResults[testId].error = error.message;
+                testStats.failed++;
+                
+                element.querySelector('.test-status').className = 'test-status status-failed';
+                element.querySelector('.test-status').textContent = 'FAILED';
+                element.querySelector('.test-result').innerHTML = `
+                    <strong>Endpoint:</strong> ${test.method} ${test.endpoint}<br>
+                    <strong>Status:</strong> ❌ Failed<br>
+                    <strong>Error:</strong> ${error.message}
+                `;
+                
+                log(`❌ ${test.name} - FAILED: ${error.message}`, 'error');
+            }
+            
+            updateSummary();
+        }
+        
+        async function runAllTests() {
+            log('🚀 Starting comprehensive admin module test suite', 'info');
+            document.getElementById('summary').classList.add('show');
+            
+            // Reset stats
+            testStats = { total: testStats.total, passed: 0, failed: 0 };
+            
+            // Run all tests sequentially
+            for (const testId of Object.keys(testResults)) {
+                await runTest(testId);
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Final summary
+            const successRate = Math.round((testStats.passed / testStats.total) * 100);
+            
+            if (successRate === 100) {
+                log(`🎉 ALL TESTS PASSED! Admin module is 100% functional.`, 'success');
+            } else if (successRate >= 80) {
+                log(`⚠️ Most tests passed (${successRate}%). Some endpoints may need attention.`, 'warning');
+            } else {
+                log(`❌ Multiple test failures (${successRate}% success rate). Backend may need attention.`, 'error');
+            }
+            
+            log(`📊 Final Results: ${testStats.passed}/${testStats.total} tests passed`, 'info');
+        }
+        
+        function clearResults() {
+            // Reset all test results
+            Object.keys(testResults).forEach(testId => {
+                const element = document.getElementById(testId);
+                const test = testResults[testId];
+                
+                testResults[testId].status = 'pending';
+                element.querySelector('.test-status').className = 'test-status status-pending';
+                element.querySelector('.test-status').textContent = 'PENDING';
+                element.querySelector('.test-result').innerHTML = `
+                    <strong>Endpoint:</strong> ${test.method} ${test.endpoint}<br>
+                    <strong>Status:</strong> Waiting to run...
+                `;
+            });
+            
+            // Reset stats
+            testStats = { total: testStats.total, passed: 0, failed: 0 };
+            updateSummary();
+            
+            // Clear logs
+            document.getElementById('logs').innerHTML = `
+                <div class="log-entry log-info">🚀 Admin Module Test Suite Ready</div>
+                <div class="log-entry log-info">Click "Run All Tests" to start comprehensive testing</div>
+            `;
+            
+            document.getElementById('summary').classList.remove('show');
+            
+            log('🔄 Test results cleared', 'info');
+        }
+        
+        // Initialize tests when page loads
+        document.addEventListener('DOMContentLoaded', initializeTests);
+    </script>
+</body>
+</html>
