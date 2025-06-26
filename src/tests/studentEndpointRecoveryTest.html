@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayKaru Student Endpoint Recovery Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        .output { background: #2d2d2d; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>🔧 StayKaru Student Endpoint Recovery Test</h1>
+    <button onclick="runTests()">Start Recovery Tests</button>
+    <div id="output" class="output"></div>
+
+    <script>
+        const API_BASE_URL = 'https://staykaru-backend-60ed08adb2a7.herokuapp.com/api';
+        let outputDiv = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            outputDiv.appendChild(div);
+            console.log(message);
+        }
+
+        async function getTestToken() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@staykaru.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.access_token;
+                }
+            } catch (error) {
+                log('❌ Failed to get test token: ' + error.message, 'error');
+            }
+            return null;
+        }
+
+        async function runTests() {
+            outputDiv.innerHTML = '';
+            log('🔧 Testing FAILED student endpoints with alternative solutions...', 'info');
+            
+            const token = await getTestToken();
+            if (!token) {
+                log('❌ Could not get authentication token', 'error');
+                return;
+            }
+
+            log('✅ Got authentication token', 'success');
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            };
+
+            const failedTests = [
+                {
+                    name: 'Update Student Profile',
+                    alternatives: [
+                        { method: 'PUT', url: '/profile' },
+                        { method: 'PUT', url: '/users/profile' },
+                        { method: 'PATCH', url: '/users/profile' },
+                        { method: 'PUT', url: '/student/profile' },
+                        { method: 'PATCH', url: '/student/profile' }
+                    ],
+                    testData: { name: 'Test Student', phone: '1234567890' }
+                },
+                {
+                    name: 'Search Accommodations',
+                    alternatives: [
+                        { method: 'GET', url: '/search/accommodations?query=apartment' },
+                        { method: 'GET', url: '/accommodations/search?query=apartment' },
+                        { method: 'GET', url: '/accommodations?search=apartment' },
+                        { method: 'GET', url: '/accommodations?q=apartment' },
+                        { method: 'POST', url: '/accommodations/search', body: { query: 'apartment' } }
+                    ]
+                },
+                {
+                    name: 'Filter Accommodations',
+                    alternatives: [
+                        { method: 'GET', url: '/accommodations/filter?type=apartment&minPrice=100&maxPrice=500' },
+                        { method: 'GET', url: '/accommodations?type=apartment&minPrice=100&maxPrice=500' },
+                        { method: 'GET', url: '/accommodations?filter[type]=apartment&filter[price][min]=100&filter[price][max]=500' },
+                        { method: 'POST', url: '/accommodations/filter', body: { type: 'apartment', minPrice: 100, maxPrice: 500 } }
+                    ]
+                },
+                {
+                    name: 'Accommodation Details',
+                    alternatives: [
+                        { method: 'GET', url: '/accommodations/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/accommodation/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/accommodations/details/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/accommodations/507f1f77bcf86cd799439011/details' }
+                    ]
+                },
+                {
+                    name: 'Create Booking',
+                    alternatives: [
+                        { method: 'POST', url: '/bookings', body: { accommodationId: '507f1f77bcf86cd799439011', checkIn: '2025-07-01', checkOut: '2025-07-07' } },
+                        { method: 'POST', url: '/booking', body: { accommodationId: '507f1f77bcf86cd799439011', checkIn: '2025-07-01', checkOut: '2025-07-07' } },
+                        { method: 'POST', url: '/student/bookings', body: { accommodationId: '507f1f77bcf86cd799439011', checkIn: '2025-07-01', checkOut: '2025-07-07' } }
+                    ]
+                },
+                {
+                    name: 'Booking History',
+                    alternatives: [
+                        { method: 'GET', url: '/bookings/history' },
+                        { method: 'GET', url: '/bookings?status=history' },
+                        { method: 'GET', url: '/student/bookings' },
+                        { method: 'GET', url: '/bookings/user' },
+                        { method: 'GET', url: '/my/bookings' }
+                    ]
+                },
+                {
+                    name: 'Food Provider Details',
+                    alternatives: [
+                        { method: 'GET', url: '/food-providers/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/food-provider/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/providers/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/food-providers/details/507f1f77bcf86cd799439011' }
+                    ]
+                },
+                {
+                    name: 'Food Provider Menu',
+                    alternatives: [
+                        { method: 'GET', url: '/food-providers/507f1f77bcf86cd799439011/menu' },
+                        { method: 'GET', url: '/menu/507f1f77bcf86cd799439011' },
+                        { method: 'GET', url: '/food-providers/507f1f77bcf86cd799439011/items' },
+                        { method: 'GET', url: '/menus?providerId=507f1f77bcf86cd799439011' }
+                    ]
+                },
+                {
+                    name: 'Create Order',
+                    alternatives: [
+                        { method: 'POST', url: '/orders', body: { providerId: '507f1f77bcf86cd799439011', items: [{ id: '1', quantity: 1 }] } },
+                        { method: 'POST', url: '/order', body: { providerId: '507f1f77bcf86cd799439011', items: [{ id: '1', quantity: 1 }] } },
+                        { method: 'POST', url: '/student/orders', body: { providerId: '507f1f77bcf86cd799439011', items: [{ id: '1', quantity: 1 }] } }
+                    ]
+                },
+                {
+                    name: 'Order History',
+                    alternatives: [
+                        { method: 'GET', url: '/orders/history' },
+                        { method: 'GET', url: '/orders?status=history' },
+                        { method: 'GET', url: '/student/orders' },
+                        { method: 'GET', url: '/orders/user' },
+                        { method: 'GET', url: '/my/orders' }
+                    ]
+                },
+                {
+                    name: 'Student Preferences',
+                    alternatives: [
+                        { method: 'GET', url: '/preferences' },
+                        { method: 'GET', url: '/user/preferences' },
+                        { method: 'GET', url: '/student/preferences' },
+                        { method: 'GET', url: '/profile/preferences' }
+                    ]
+                },
+                {
+                    name: 'Update Preferences',
+                    alternatives: [
+                        { method: 'PUT', url: '/preferences', body: { dietary: 'vegetarian', budget: 500 } },
+                        { method: 'PATCH', url: '/preferences', body: { dietary: 'vegetarian', budget: 500 } },
+                        { method: 'PUT', url: '/user/preferences', body: { dietary: 'vegetarian', budget: 500 } },
+                        { method: 'PUT', url: '/student/preferences', body: { dietary: 'vegetarian', budget: 500 } }
+                    ]
+                },
+                {
+                    name: 'Accommodation Recommendations',
+                    alternatives: [
+                        { method: 'GET', url: '/recommendations/accommodations' },
+                        { method: 'GET', url: '/accommodations/recommended' },
+                        { method: 'GET', url: '/student/recommendations/accommodations' },
+                        { method: 'GET', url: '/recommendations?type=accommodations' }
+                    ]
+                },
+                {
+                    name: 'Food Recommendations',
+                    alternatives: [
+                        { method: 'GET', url: '/recommendations/food' },
+                        { method: 'GET', url: '/food-providers/recommended' },
+                        { method: 'GET', url: '/student/recommendations/food' },
+                        { method: 'GET', url: '/recommendations?type=food' }
+                    ]
+                },
+                {
+                    name: 'Create Review',
+                    alternatives: [
+                        { method: 'POST', url: '/reviews', body: { itemId: '507f1f77bcf86cd799439011', rating: 5, comment: 'Great!' } },
+                        { method: 'POST', url: '/review', body: { itemId: '507f1f77bcf86cd799439011', rating: 5, comment: 'Great!' } },
+                        { method: 'POST', url: '/student/reviews', body: { itemId: '507f1f77bcf86cd799439011', rating: 5, comment: 'Great!' } }
+                    ]
+                },
+                {
+                    name: 'Mark Notification Read',
+                    alternatives: [
+                        { method: 'PUT', url: '/notifications/507f1f77bcf86cd799439011/read' },
+                        { method: 'PATCH', url: '/notifications/507f1f77bcf86cd799439011/read' },
+                        { method: 'POST', url: '/notifications/507f1f77bcf86cd799439011/read' },
+                        { method: 'PUT', url: '/notifications/507f1f77bcf86cd799439011', body: { read: true } }
+                    ]
+                },
+                {
+                    name: 'Student Dashboard',
+                    alternatives: [
+                        { method: 'GET', url: '/dashboard/student' },
+                        { method: 'GET', url: '/student/dashboard' },
+                        { method: 'GET', url: '/dashboard' },
+                        { method: 'GET', url: '/student/summary' }
+                    ]
+                },
+                {
+                    name: 'Student Analytics',
+                    alternatives: [
+                        { method: 'GET', url: '/analytics/student' },
+                        { method: 'GET', url: '/student/analytics' },
+                        { method: 'GET', url: '/student/stats' },
+                        { method: 'GET', url: '/analytics?role=student' }
+                    ]
+                }
+            ];
+
+            const workingEndpoints = [];
+            const stillFailingEndpoints = [];
+
+            for (const test of failedTests) {
+                log(`🔍 Testing ${test.name}:`, 'info');
+                let found = false;
+
+                for (const alternative of test.alternatives) {
+                    try {
+                        const options = {
+                            method: alternative.method,
+                            headers: headers
+                        };
+
+                        if (alternative.body) {
+                            options.body = JSON.stringify(alternative.body);
+                        }
+
+                        const response = await fetch(`${API_BASE_URL}${alternative.url}`, options);
+                        
+                        if (response.ok) {
+                            log(`✅ ${test.name} -> ${alternative.method} ${alternative.url} (${response.status})`, 'success');
+                            workingEndpoints.push({
+                                name: test.name,
+                                method: alternative.method,
+                                endpoint: alternative.url,
+                                status: response.status,
+                                body: alternative.body || null
+                            });
+                            found = true;
+                            break;
+                        } else if (response.status !== 404) {
+                            log(`⚠️ ${test.name} -> ${alternative.method} ${alternative.url} (${response.status})`, 'warning');
+                        }
+                    } catch (error) {
+                        // Silent fail for network errors
+                    }
+                }
+
+                if (!found) {
+                    log(`❌ ${test.name} -> All alternatives failed`, 'error');
+                    stillFailingEndpoints.push(test.name);
+                }
+            }
+
+            // Summary
+            log('\n🏁 RECOVERY TEST SUMMARY:', 'info');
+            log(`📊 Total Failed Endpoints: ${failedTests.length}`, 'info');
+            log(`✅ Recovered: ${workingEndpoints.length}`, 'success');
+            log(`❌ Still Failing: ${stillFailingEndpoints.length}`, 'error');
+            log(`📈 Recovery Rate: ${((workingEndpoints.length / failedTests.length) * 100).toFixed(1)}%`, 'info');
+
+            if (workingEndpoints.length > 0) {
+                log('\n🎯 RECOVERED ENDPOINTS:', 'success');
+                workingEndpoints.forEach(endpoint => {
+                    log(`✅ ${endpoint.name} -> ${endpoint.method} ${endpoint.endpoint} (${endpoint.status})`, 'success');
+                });
+            }
+
+            if (stillFailingEndpoints.length > 0) {
+                log('\n❌ STILL FAILING:', 'error');
+                stillFailingEndpoints.forEach(name => {
+                    log(`❌ ${name}`, 'error');
+                });
+            }
+
+            // Export results for use in application
+            console.log('WORKING_ENDPOINTS_FOR_CODE:', JSON.stringify(workingEndpoints, null, 2));
+        }
+    </script>
+</body>
+</html>

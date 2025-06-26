@@ -1,0 +1,41 @@
+{
+    "expo": {
+        "name": "StayKaru",
+        "slug": "staykaru-frontend",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "userInterfaceStyle": "light",
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "platforms": [
+            "ios",
+            "android",
+            "web"
+        ],
+        "ios": {
+            "supportsTablet": false,
+            "bundleIdentifier": "com.staykaru.frontend"
+        },
+        "android": {
+            "package": "com.staykaru.frontend",
+            "permissions": [
+                "android.permission.CAMERA",
+                "android.permission.READ_EXTERNAL_STORAGE",
+                "android.permission.WRITE_EXTERNAL_STORAGE"
+            ]
+        },
+        "web": {
+            "bundler": "metro"
+        },
+        "plugins": [
+            [
+                "expo-image-picker",
+                {
+                    "photosPermission": "The app needs access to your photos to upload profile pictures.",
+                    "cameraPermission": "The app needs access to your camera to take profile pictures."
+                }
+            ]
+        ]
+    }
+}
