@@ -421,9 +421,10 @@ class AuthService {
     getRoleDashboardRoute(role) {
         switch (role) {
             case 'admin':
-                return 'AdminDashboard';
+                return 'AdminStack';
             case 'student':
-                return 'StudentDashboard';            case 'landlord':
+                return 'StudentDashboard';
+            case 'landlord':
                 return 'LandlordDashboardNew';
             case 'food_provider':
                 return 'FoodProviderDashboardNew';

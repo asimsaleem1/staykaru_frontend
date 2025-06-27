@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Platform } from 'react-native';
+import { API_BASE_URL } from '../utils/constants';
 
 class ImageService {
     // Show image picker options

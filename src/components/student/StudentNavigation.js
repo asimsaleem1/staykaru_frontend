@@ -16,21 +16,21 @@ const StudentNavigation = ({ navigation, activeRoute }) => {
             label: 'Housing',
             icon: 'bed-outline',
             activeIcon: 'bed',
-            screen: 'AccommodationSearch'
+            screen: 'AccommodationsList'
         },
         {
             key: 'food',
             label: 'Food',
             icon: 'restaurant-outline',
             activeIcon: 'restaurant',
-            screen: 'FoodSearch'
+            screen: 'FoodProviders'
         },
         {
             key: 'bookings',
             label: 'Bookings',
             icon: 'calendar-outline',
             activeIcon: 'calendar',
-            screen: 'BookingHistory'
+            screen: 'MyBookings'
         },
         {
             key: 'profile',

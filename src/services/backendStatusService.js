@@ -41,7 +41,8 @@ class BackendStatusService {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-            const response = await fetch('https://staykaru-backend-60ed08adb2a7.herokuapp.com/api/health', {
+            // Use the main API endpoint which we know exists
+            const response = await fetch('https://staykaru-backend-60ed08adb2a7.herokuapp.com/api', {
                 method: 'GET',
                 signal: controller.signal,
                 headers: { 'Content-Type': 'application/json' }
@@ -49,6 +50,8 @@ class BackendStatusService {
 
             clearTimeout(timeoutId);
             
+            // Consider any response (even 404) as backend being available
+            // Only consider 500+ errors as backend being unavailable
             const newStatus = response.status < 500;
             
             if (newStatus !== this.isBackendAvailable) {

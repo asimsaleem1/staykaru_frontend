@@ -1,129 +1,38 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { createStackNavigator } from '@react-navigation/stack';
 
-const FoodProviderNavigation = ({ navigation, activeRoute }) => {
-    const navigationItems = [        {
-            key: 'dashboard',
-            label: 'Dashboard',
-            icon: 'home-outline',
-            activeIcon: 'home',
-            screen: 'FoodProviderDashboardNew'
-        },
-        {
-            key: 'menu',
-            label: 'Menu',
-            icon: 'restaurant-outline',
-            activeIcon: 'restaurant',
-            screen: 'MenuManagement'
-        },
-        {
-            key: 'orders',
-            label: 'Orders',
-            icon: 'receipt-outline',
-            activeIcon: 'receipt',
-            screen: 'OrderManagement'
-        },
-        {
-            key: 'inventory',
-            label: 'Inventory',
-            icon: 'cube-outline',
-            activeIcon: 'cube',
-            screen: 'InventoryManagement'
-        },
-        {
-            key: 'reviews',
-            label: 'Reviews',
-            icon: 'star-outline',
-            activeIcon: 'star',
-            screen: 'ReviewsRatings'
-        },
-        {
-            key: 'analytics',
-            label: 'Analytics',
-            icon: 'bar-chart-outline',
-            activeIcon: 'bar-chart',
-            screen: 'AnalyticsReports'
-        },
-        {
-            key: 'profile',
-            label: 'Profile',
-            icon: 'person-outline',
-            activeIcon: 'person',
-            screen: 'FoodProviderProfile'
-        },
-        {
-            key: 'settings',
-            label: 'Settings',
-            icon: 'settings-outline',
-            activeIcon: 'settings',
-            screen: 'Settings'
-        }
-    ];
+import LoginScreen from '../../screens/foodProvider/LoginScreen.js';
+import RegisterScreen from '../../screens/foodProvider/RegisterScreen.js';
+import ForgotPasswordScreen from '../../screens/foodProvider/ForgotPasswordScreen.js';
+import FoodProviderDashboardScreen from '../../screens/foodProvider/FoodProviderDashboardScreen.js';
+import AnalyticsDashboardScreen from '../../screens/foodProvider/AnalyticsDashboardScreen.js';
+import FoodProviderProfileScreen from '../../screens/foodProvider/FoodProviderProfileScreen.js';
+import SettingsScreen from '../../screens/foodProvider/SettingsScreen.js';
+import MenuManagementScreen from '../../screens/foodProvider/MenuManagementScreen.js';
+import AddMenuItemScreen from '../../screens/foodProvider/AddMenuItemScreen.js';
+import EditMenuItemScreen from '../../screens/foodProvider/EditMenuItemScreen.js';
+import OrderManagementScreen from '../../screens/foodProvider/OrderManagementScreen.js';
+import OrderDetailsScreen from '../../screens/foodProvider/OrderDetailsScreen.js';
+import NotificationsCenterScreen from '../../screens/foodProvider/NotificationsCenterScreen.js';
 
-    return (
-        <View style={styles.container}>
-            {navigationItems.map((item) => (
-                <TouchableOpacity
-                    key={item.key}
-                    style={[
-                        styles.navItem,
-                        activeRoute === item.key && styles.activeNavItem
-                    ]}
-                    onPress={() => navigation.navigate(item.screen)}
-                >
-                    <Ionicons
-                        name={activeRoute === item.key ? item.activeIcon : item.icon}
-                        size={24}
-                        color={activeRoute === item.key ? '#FF6B35' : '#666'}
-                    />
-                    <Text style={[
-                        styles.navLabel,
-                        activeRoute === item.key && styles.activeNavLabel
-                    ]}>
-                        {item.label}
-                    </Text>
-                </TouchableOpacity>
-            ))}
-        </View>
-    );
-};
+const Stack = createStackNavigator();
 
-const styles = StyleSheet.create({
-    container: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    navItem: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 4,
-        borderRadius: 8,
-    },
-    activeNavItem: {
-        backgroundColor: '#fff5f0',
-    },
-    navLabel: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 4,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    activeNavLabel: {
-        color: '#FF6B35',
-        fontWeight: '600',
-    },
-});
-
-export default FoodProviderNavigation;
+export default function FoodProviderNavigation() {
+  return (
+    <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: true }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="FoodProviderDashboard" component={FoodProviderDashboardScreen} options={{ title: 'Dashboard' }} />
+      <Stack.Screen name="AnalyticsDashboard" component={AnalyticsDashboardScreen} options={{ title: 'Analytics' }} />
+      <Stack.Screen name="Profile" component={FoodProviderProfileScreen} options={{ title: 'Profile' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="MenuManagement" component={MenuManagementScreen} options={{ title: 'Menu' }} />
+      <Stack.Screen name="AddMenuItem" component={AddMenuItemScreen} options={{ title: 'Add Menu Item' }} />
+      <Stack.Screen name="EditMenuItem" component={EditMenuItemScreen} options={{ title: 'Edit Menu Item' }} />
+      <Stack.Screen name="OrderManagement" component={OrderManagementScreen} options={{ title: 'Orders' }} />
+      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} options={{ title: 'Order Details' }} />
+      <Stack.Screen name="NotificationsCenter" component={NotificationsCenterScreen} options={{ title: 'Notifications' }} />
+    </Stack.Navigator>
+  );
+} 
