@@ -8,7 +8,7 @@ This comprehensive guide provides detailed instructions for developing the StayK
 
 ### Production API
 
-**Base URL:** `https://staykaru-backend-60ed08adb2a7.herokuapp.com`  
+**Base URL:** `https://staykaru-backend-60ed08adb2a7.herokuapp.com/api`  
 **API Documentation (Swagger):** `https://staykaru-backend-60ed08adb2a7.herokuapp.com/api`  
 **WebSocket URL:** `wss://staykaru-backend-60ed08adb2a7.herokuapp.com`
 
