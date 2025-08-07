@@ -1,4 +1,4 @@
-// Student API Service - Enhanced with working endpoints and smart fallbacks
+// Student API Service - Enhanced with real backend data only
 // Updated for maximum functionality with real backend data
 
 import { API_BASE_URL } from '../utils/constants';
@@ -6,6 +6,7 @@ import authService from './authService';
 import { realTimeApiService } from './realTimeApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationService } from './notificationService';
+import backendStatusService from './backendStatusService';
 
 class StudentApiService {
   constructor() {
@@ -22,95 +23,72 @@ class StudentApiService {
     };
   }
 
-  // Enhanced API call with multiple endpoint fallbacks
+  // Enhanced API call with proper error handling
   async apiCall(endpoints, options = {}) {
+    // Check backend health first
+    if (!backendStatusService.getCurrentStatus()) {
+      throw new Error('Backend is currently unavailable');
+    }
+
     const headers = await this.getHeaders();
     const endpointList = Array.isArray(endpoints) ? endpoints : [endpoints];
     
     for (const endpoint of endpointList) {
       try {
+        console.log(`🌐 Calling endpoint: ${this.baseUrl}${endpoint}`);
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           ...options,
           headers: { ...headers, ...options.headers }
         });
 
         if (response.ok) {
-          return await response.json();
+          const data = await response.json();
+          console.log(`✅ Success: ${endpoint}`);
+          return data;
+        } else {
+          console.warn(`⚠️ Endpoint ${endpoint} returned ${response.status}`);
+          // Continue to next endpoint if this one fails
         }
       } catch (error) {
-        console.warn(`Endpoint ${endpoint} failed:`, error.message);
-        continue;
+        console.warn(`❌ Endpoint ${endpoint} failed:`, error.message);
+        // Continue to next endpoint if this one fails
       }
     }
     
+    // If all endpoints fail, throw a more descriptive error
     throw new Error(`All endpoints failed: ${endpointList.join(', ')}`);
   }
 
-  // Get student profile
+  // Get student profile - REAL BACKEND DATA ONLY
   async getProfile() {
     try {
-      console.log('📋 Fetching student profile...');
-      return await this.apiCall([
+      console.log('📋 Fetching student profile from backend...');
+      const data = await this.apiCall([
         '/student/profile',
         '/users/profile',
         '/profile'
       ]);
-    } catch (error) {
-      console.warn('Profile endpoint not available, using fallback data');
-      return this.generateFallbackData('profile');
-    }
-  }
-
-  // Fallback data generator
-  generateFallbackData(type, id = null) {
-    const fallbacks = {
-      profile: {
-        id: id || 'student_001',
-        name: 'Current Student',
-        email: 'student@example.com',
-        phone: '+1234567890',
-        university: 'Local University',
-        preferences: {
-          budget: 500,
-          location: 'Near campus',
-          dietary: 'No restrictions'
-        },
-        isDefault: true
-      },
-      preferences: {
-        dietary: 'none',
-        budget: 500,
-        location: 'near_campus',
-        accommodation_type: 'any',
-        notifications: true,
-        isDefault: true
-      },
-      bookings: [],
-      orders: [],
-      dashboard: {
-        stats: {
-          totalBookings: 0,
-          totalOrders: 0,
-          totalSpent: 0,
-          unreadNotifications: 0
-        },
-        recentActivity: [],
-        isDefault: true
+      
+      if (!data) {
+        throw new Error('No profile data received from backend');
       }
-    };
-    
-    return fallbacks[type] || {};
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Profile fetch failed:', error.message);
+      throw new Error('Unable to fetch profile from backend');
+    }
   }
 
   // ========================================
   // ENHANCED STUDENT API METHODS
-  // Using working endpoints + smart fallbacks
+  // Using REAL BACKEND DATA ONLY
   // ========================================
 
-  // 1. Student Profile - Multiple endpoint strategy
+  // 1. Student Profile - REAL BACKEND DATA
   async getStudentProfile(userId) {
     try {
-      // Try multiple profile endpoints
+      console.log(`👤 Fetching student profile for user: ${userId}`);
       const endpoints = [
         `/users/${userId}`,
         '/users/profile',
@@ -120,14 +98,15 @@ class StudentApiService {
       
       return await this.apiCall(endpoints);
     } catch (error) {
-      console.warn('Profile endpoints failed, using fallback:', error);
-      return this.generateFallbackData('profile', userId);
+      console.error('❌ Student profile fetch failed:', error.message);
+      throw new Error('Unable to fetch student profile from backend');
     }
   }
 
-  // 2. Update Profile - Multiple methods
+  // 2. Update Profile - REAL BACKEND DATA
   async updateStudentProfile(userId, profileData) {
     try {
+      console.log(`✏️ Updating student profile for user: ${userId}`);
       const endpoints = [
         `/users/${userId}`,
         '/users/profile',
@@ -136,29 +115,31 @@ class StudentApiService {
       
       for (const endpoint of endpoints) {
         try {
-          return await this.apiCall(endpoint, {
+          const result = await this.apiCall(endpoint, {
             method: 'PUT',
             body: JSON.stringify(profileData)
           });
+          
+          console.log('✅ Profile updated successfully');
+          return result;
         } catch (error) {
+          console.warn(`⚠️ Profile update failed for ${endpoint}:`, error.message);
           continue;
         }
       }
       
-      // Fallback: simulate success
-      console.warn('Profile update API unavailable, simulating success');
-      return { ...profileData, updated: true, timestamp: new Date().toISOString() };
+      throw new Error('All profile update endpoints failed');
     } catch (error) {
-      console.error('Error updating student profile:', error);
+      console.error('❌ Profile update failed:', error.message);
+      throw new Error('Unable to update profile in backend');
     }
   }
 
-  // 3. Accommodations - Enhanced with real backend data + multi-city support
+  // 3. Accommodations - REAL BACKEND DATA ONLY
   async getAccommodations(filters = {}) {
     try {
-      console.log('Fetching accommodations with filters:', filters);
+      console.log('🏠 Fetching accommodations from backend with filters:', filters);
       
-      // Try multiple accommodation endpoints
       const endpoints = [
         '/accommodations',
         '/student/accommodations',
@@ -166,181 +147,32 @@ class StudentApiService {
         '/listings'
       ];
       
-      let backendData = [];
+      const data = await this.apiCall(endpoints);
       
-      try {
-        const data = await this.apiCall(endpoints);
-        console.log('Backend accommodations data received:', data);
-        
-        if (data && Array.isArray(data)) {
-          backendData = data;
-        } else if (data && data.accommodations && Array.isArray(data.accommodations)) {
-          backendData = data.accommodations;
-        } else if (data && data.data && Array.isArray(data.data)) {
-          backendData = data.data;
-        }
-      } catch (apiError) {
-        console.warn('Backend accommodation API failed, using enhanced fallback:', apiError.message);
+      if (!data) {
+        throw new Error('No accommodation data received from backend');
       }
       
-      // Enhanced fallback data with 50+ accommodations across cities
-      const enhancedFallbackData = [
-        // Karachi Accommodations (15+ properties)
-        {
-          _id: 'acc_kar_001',
-          name: 'Luxury Student Apartment Clifton',
-          description: 'Premium fully furnished apartment with sea view, ideal for international students.',
-          location: 'Clifton Block 5, Karachi',
-          city: 'karachi',
-          coordinates: { lat: 24.8467, lng: 67.0299 },
-          price: 45000,
-          type: 'apartment',
-          images: ['https://picsum.photos/400/300?random=1'],
-          amenities: ['Sea View', 'WiFi', 'AC', 'Gym', 'Security', 'Parking'],
-          rating: 4.8,
-          available: true,
-          landlord: { name: 'Ahmed Khan', phone: '+92 300 1234567' },
-          reviews: 45,
-          distance: '2.5 km from IBA'
-        },
-        {
-          _id: 'acc_kar_002',
-          name: 'Budget Studio DHA Phase 2',
-          description: 'Affordable studio apartment in DHA with all basic amenities.',
-          location: 'DHA Phase 2, Karachi',
-          city: 'karachi',
-          coordinates: { lat: 24.8607, lng: 67.0011 },
-          price: 20000,
-          type: 'studio',
-          images: ['https://picsum.photos/400/300?random=2'],
-          amenities: ['WiFi', 'Kitchen', 'AC', 'Security'],
-          rating: 4.2,
-          available: true,
-          landlord: { name: 'Sara Ahmed', phone: '+92 301 2345678' },
-          reviews: 28,
-          distance: '1.8 km from LUMS'
-        },
-        {
-          _id: 'acc_kar_003',
-          name: 'Premium Hostel Gulshan',
-          description: 'Modern hostel facility with co-working spaces and community areas.',
-          location: 'Gulshan-e-Iqbal, Karachi',
-          city: 'karachi',
-          coordinates: { lat: 24.9203, lng: 67.0954 },
-          price: 15000,
-          type: 'hostel',
-          images: ['https://picsum.photos/400/300?random=3'],
-          amenities: ['WiFi', 'Study Rooms', 'Cafeteria', 'Laundry', 'Security'],
-          rating: 4.5,
-          available: true,
-          landlord: { name: 'Muhammad Ali', phone: '+92 302 3456789' },
-          reviews: 67,
-          distance: '0.8 km from KU'
-        },
-        
-        // Lahore Accommodations (20+ properties)
-        {
-          _id: 'acc_lhr_001',
-          name: 'Elite Student Residence Gulberg',
-          description: 'Ultra-modern student residence in the heart of Gulberg with premium facilities.',
-          location: 'Gulberg III, Lahore',
-          city: 'lahore',
-          coordinates: { lat: 31.5169, lng: 74.3484 },
-          price: 38000,
-          type: 'residence',
-          images: ['https://picsum.photos/400/300?random=4'],
-          amenities: ['WiFi', 'Gym', 'Pool', 'Security', 'Cafeteria', 'Study Rooms'],
-          rating: 4.9,
-          available: true,
-          landlord: { name: 'Dr. Hassan Shah', phone: '+92 333 1111111' },
-          reviews: 89,
-          distance: '1.5 km from LUMS'
-        },
-        {
-          _id: 'acc_lhr_002',
-          name: 'Affordable Shared Room Model Town',
-          description: 'Clean and comfortable shared accommodation perfect for budget-conscious students.',
-          location: 'Model Town, Lahore',
-          city: 'lahore',
-          coordinates: { lat: 31.4833, lng: 74.3167 },
-          price: 12000,
-          type: 'shared_room',
-          images: ['https://picsum.photos/400/300?random=5'],
-          amenities: ['WiFi', 'Kitchen Access', 'Security', 'Study Area'],
-          rating: 4.1,
-          available: true,
-          landlord: { name: 'Fatima Khan', phone: '+92 334 2222222' },
-          reviews: 34,
-          distance: '2.0 km from UET'
-        },
-        {
-          _id: 'acc_lhr_003',
-          name: 'DHA Luxury Studio',
-          description: 'Spacious studio apartment in DHA with modern furnishing and facilities.',
-          location: 'DHA Phase 5, Lahore',
-          city: 'lahore',
-          coordinates: { lat: 31.4722, lng: 74.4056 },
-          price: 35000,
-          type: 'studio',
-          images: ['https://picsum.photos/400/300?random=6'],
-          amenities: ['WiFi', 'AC', 'Kitchen', 'Parking', 'Security', 'Balcony'],
-          rating: 4.7,
-          available: true,
-          landlord: { name: 'Ayesha Malik', phone: '+92 335 3333333' },
-          reviews: 52,
-          distance: '3.2 km from FAST'
-        },
-        
-        // Islamabad Accommodations (15+ properties)
-        {
-          _id: 'acc_isl_001',
-          name: 'Capitol Heights F-10',
-          description: 'Premium apartment complex with scenic Margalla Hills view and top-tier amenities.',
-          location: 'F-10 Markaz, Islamabad',
-          city: 'islamabad',
-          coordinates: { lat: 33.6844, lng: 73.0479 },
-          price: 50000,
-          type: 'apartment',
-          images: ['https://picsum.photos/400/300?random=7'],
-          amenities: ['Mountain View', 'WiFi', 'AC', 'Gym', 'Pool', 'Security', 'Parking'],
-          rating: 4.9,
-          available: true,
-          landlord: { name: 'Dr. Sarah Ahmed', phone: '+92 336 4444444' },
-          reviews: 78,
-          distance: '2.8 km from NUST'
-        },
-        {
-          _id: 'acc_isl_002',
-          name: 'Budget Hostel G-9',
-          description: 'Economical hostel accommodation with basic amenities for students.',
-          location: 'Sector G-9, Islamabad',
-          city: 'islamabad',
-          coordinates: { lat: 33.6973, lng: 73.0515 },
-          price: 18000,
-          type: 'hostel',
-          images: ['https://picsum.photos/400/300?random=8'],
-          amenities: ['WiFi', 'Security', 'Common Kitchen', 'Study Area'],
-          rating: 4.0,
-          available: true,
-          landlord: { name: 'Imran Ali', phone: '+92 337 5555555' },
-          reviews: 23,
-          distance: '1.5 km from QAU'
-        }
-      ];
+      let accommodations = [];
+      if (Array.isArray(data)) {
+        accommodations = data;
+      } else if (data && data.accommodations && Array.isArray(data.accommodations)) {
+        accommodations = data.accommodations;
+      } else if (data && data.data && Array.isArray(data.data)) {
+        accommodations = data.data;
+      }
       
-      // Merge backend data with fallback data
-      const allData = [...backendData, ...enhancedFallbackData];
+      console.log(`✅ Received ${accommodations.length} accommodations from backend`);
       
-      // Remove duplicates based on _id
-      const uniqueData = allData.filter((item, index, self) => 
-        index === self.findIndex(t => t._id === item._id)
-      );
+      // Apply filters if provided
+      if (Object.keys(filters).length > 0) {
+        accommodations = this.applyFilters(accommodations, filters);
+      }
       
-      console.log(`Total accommodations: ${uniqueData.length}`);
-      return this.applyFilters(uniqueData, filters);
+      return accommodations;
     } catch (error) {
-      console.error('Error fetching accommodations:', error);
-      return [];
+      console.error('❌ Accommodations fetch failed:', error.message);
+      throw new Error('Unable to fetch accommodations from backend');
     }
   }
 
@@ -424,12 +256,11 @@ class StudentApiService {
     }
   }
 
-  // 7. Food Providers - Enhanced with real backend data + multi-city support
+  // 7. Food Providers - REAL BACKEND DATA ONLY
   async getFoodProviders(filters = {}) {
     try {
-      console.log('Fetching food providers with filters:', filters);
+      console.log('🍕 Fetching food providers from backend with filters:', filters);
       
-      // Try multiple food provider endpoints
       const endpoints = [
         '/food-providers',
         '/student/food-providers',
@@ -437,253 +268,89 @@ class StudentApiService {
         '/vendors'
       ];
       
-      let backendData = [];
+      const data = await this.apiCall(endpoints);
       
-      try {
-        const data = await this.apiCall(endpoints);
-        console.log('Backend food providers data received:', data);
-        
-        if (data && Array.isArray(data)) {
-          backendData = data;
-        } else if (data && data.providers && Array.isArray(data.providers)) {
-          backendData = data.providers;
-        } else if (data && data.data && Array.isArray(data.data)) {
-          backendData = data.data;
-        }
-      } catch (apiError) {
-        console.warn('Backend food provider API failed, using enhanced fallback:', apiError.message);
+      if (!data) {
+        throw new Error('No food provider data received from backend');
       }
       
-      // Enhanced fallback data with 50+ food providers across cities
-      const enhancedFallbackData = [
-        // Karachi Food Providers (15+ restaurants)
-        {
-          _id: 'food_kar_001',
-          name: 'Karachi Biryani House',
-          description: 'Authentic Karachi-style biryani with traditional flavors and fast delivery.',
-          cuisine_type: 'Pakistani',
-          location: 'Clifton Block 5, Karachi',
-          city: 'karachi',
-          coordinates: { lat: 24.8467, lng: 67.0299 },
-          rating: 4.7,
-          delivery_time: '25-35 mins',
-          delivery_fee: 80,
-          min_order: 400,
-          image: 'https://picsum.photos/300/200?random=9',
-          vegetarian_options: true,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'takeaway'],
-          isOpen: true,
-          phone: '+92 300 7777777',
-          reviews: 234,
-          speciality: 'Biryani & Karahi'
-        },
-        {
-          _id: 'food_kar_002',
-          name: 'DHA Pizza Corner',
-          description: 'Wood-fired pizzas and Italian cuisine with student-friendly prices.',
-          cuisine_type: 'Italian',
-          location: 'DHA Phase 2, Karachi',
-          city: 'karachi',
-          coordinates: { lat: 24.8607, lng: 67.0011 },
-          rating: 4.3,
-          delivery_time: '30-40 mins',
-          delivery_fee: 60,
-          min_order: 350,
-          image: 'https://picsum.photos/300/200?random=10',
-          vegetarian_options: true,
-          halal_certified: false,
-          delivery_available: true,
-          service_types: ['delivery', 'dine-in'],
-          isOpen: true,
-          phone: '+92 301 8888888',
-          reviews: 156,
-          speciality: 'Wood-fired Pizza'
-        },
-        {
-          _id: 'food_kar_003',
-          name: 'Gulshan Fast Food',
-          description: 'Quick bites and fast food favorites for hungry students.',
-          cuisine_type: 'Fast Food',
-          location: 'Gulshan-e-Iqbal, Karachi',
-          city: 'karachi',
-          coordinates: { lat: 24.9203, lng: 67.0954 },
-          rating: 4.0,
-          delivery_time: '20-30 mins',
-          delivery_fee: 40,
-          min_order: 250,
-          image: 'https://picsum.photos/300/200?random=11',
-          vegetarian_options: false,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'takeaway'],
-          isOpen: true,
-          phone: '+92 302 9999999',
-          reviews: 89,
-          speciality: 'Burgers & Fries'
-        },
-        
-        // Lahore Food Providers (20+ restaurants)
-        {
-          _id: 'food_lhr_001',
-          name: 'Lahori Dhaaba Traditional',
-          description: 'Authentic Lahori cuisine with rich flavors and traditional cooking methods.',
-          cuisine_type: 'Pakistani',
-          location: 'Gulberg III, Lahore',
-          city: 'lahore',
-          coordinates: { lat: 31.5169, lng: 74.3484 },
-          rating: 4.8,
-          delivery_time: '35-50 mins',
-          delivery_fee: 100,
-          min_order: 500,
-          image: 'https://picsum.photos/300/200?random=12',
-          vegetarian_options: true,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'dine-in'],
-          isOpen: true,
-          phone: '+92 333 1111111',
-          reviews: 312,
-          speciality: 'Lahori Karahi'
-        },
-        {
-          _id: 'food_lhr_002',
-          name: 'Student Bites Model Town',
-          description: 'Budget-friendly meals specifically designed for university students.',
-          cuisine_type: 'Continental',
-          location: 'Model Town, Lahore',
-          city: 'lahore',
-          coordinates: { lat: 31.4833, lng: 74.3167 },
-          rating: 4.2,
-          delivery_time: '25-35 mins',
-          delivery_fee: 50,
-          min_order: 200,
-          image: 'https://picsum.photos/300/200?random=13',
-          vegetarian_options: true,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'takeaway'],
-          isOpen: true,
-          phone: '+92 334 2222222',
-          reviews: 187,
-          speciality: 'Student Combos'
-        },
-        {
-          _id: 'food_lhr_003',
-          name: 'DHA BBQ Specialist',
-          description: 'Premium BBQ and grilled specialties with authentic flavors.',
-          cuisine_type: 'BBQ',
-          location: 'DHA Phase 5, Lahore',
-          city: 'lahore',
-          coordinates: { lat: 31.4722, lng: 74.4056 },
-          rating: 4.6,
-          delivery_time: '40-55 mins',
-          delivery_fee: 120,
-          min_order: 600,
-          image: 'https://picsum.photos/300/200?random=14',
-          vegetarian_options: false,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'dine-in', 'takeaway'],
-          isOpen: true,
-          phone: '+92 335 3333333',
-          reviews: 278,
-          speciality: 'Seekh Kebab'
-        },
-        
-        // Islamabad Food Providers (15+ restaurants)
-        {
-          _id: 'food_isl_001',
-          name: 'Capital Cuisine F-10',
-          description: 'Fine dining experience with modern Pakistani and continental dishes.',
-          cuisine_type: 'Continental',
-          location: 'F-10 Markaz, Islamabad',
-          city: 'islamabad',
-          coordinates: { lat: 33.6844, lng: 73.0479 },
-          rating: 4.9,
-          delivery_time: '35-50 mins',
-          delivery_fee: 150,
-          min_order: 800,
-          image: 'https://picsum.photos/300/200?random=15',
-          vegetarian_options: true,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'dine-in'],
-          isOpen: true,
-          phone: '+92 336 4444444',
-          reviews: 345,
-          speciality: 'Continental Fusion'
-        },
-        {
-          _id: 'food_isl_002',
-          name: 'G-9 Food Court',
-          description: 'Multiple cuisine options under one roof with affordable pricing.',
-          cuisine_type: 'Mixed',
-          location: 'Sector G-9, Islamabad',
-          city: 'islamabad',
-          coordinates: { lat: 33.6973, lng: 73.0515 },
-          rating: 4.3,
-          delivery_time: '30-45 mins',
-          delivery_fee: 80,
-          min_order: 300,
-          image: 'https://picsum.photos/300/200?random=16',
-          vegetarian_options: true,
-          halal_certified: true,
-          delivery_available: true,
-          service_types: ['delivery', 'takeaway', 'dine-in'],
-          isOpen: true,
-          phone: '+92 337 5555555',
-          reviews: 167,
-          speciality: 'Variety Meals'
-        }
-      ];
+      let foodProviders = [];
+      if (Array.isArray(data)) {
+        foodProviders = data;
+      } else if (data && data.providers && Array.isArray(data.providers)) {
+        foodProviders = data.providers;
+      } else if (data && data.data && Array.isArray(data.data)) {
+        foodProviders = data.data;
+      }
       
-      // Merge backend data with fallback data
-      const allData = [...backendData, ...enhancedFallbackData];
+      console.log(`✅ Received ${foodProviders.length} food providers from backend`);
       
-      // Remove duplicates based on _id
-      const uniqueData = allData.filter((item, index, self) => 
-        index === self.findIndex(t => t._id === item._id)
-      );
+      // Apply filters if provided
+      if (Object.keys(filters).length > 0) {
+        foodProviders = this.applyFilters(foodProviders, filters);
+      }
       
-      console.log(`Total food providers: ${uniqueData.length}`);
-      return this.applyFilters(uniqueData, filters);
+      return foodProviders;
     } catch (error) {
-      console.error('Error fetching food providers:', error);
-      return [];
+      console.error('❌ Food providers fetch failed:', error.message);
+      throw new Error('Unable to fetch food providers from backend');
     }
   }
 
-  // 8. Food Provider Details
+  // 8. Food Provider Details - REAL BACKEND DATA
   async getFoodProviderDetails(providerId) {
     try {
-      const providers = await this.getFoodProviders();
-      const provider = providers.find(p => 
-        p._id === providerId || p.id === providerId
-      );
+      console.log(`🍽️ Fetching food provider details for: ${providerId}`);
       
-      if (provider) {
-        return {
-          ...provider,
-          menu: provider.menu || [],
-          hours: provider.hours || 'Open 24/7',
-          delivery_fee: provider.delivery_fee || 2.99,
-          min_order: provider.min_order || 10,
-          rating: provider.rating || 4.0
-        };
+      const endpoints = [
+        `/food-providers/${providerId}`,
+        `/restaurants/${providerId}`,
+        `/vendors/${providerId}`
+      ];
+      
+      const data = await this.apiCall(endpoints);
+      
+      if (!data) {
+        throw new Error('No food provider details received from backend');
       }
       
-      return await this.apiCall(`/food-providers/${providerId}`);
+      console.log('✅ Food provider details received from backend');
+      return data;
     } catch (error) {
-      console.error('Error fetching food provider details:', error);
-      throw new Error('Food provider not found');
+      console.error('❌ Food provider details fetch failed:', error.message);
+      throw new Error('Unable to fetch food provider details from backend');
     }
   }
 
-  // 9. Bookings with fallback
+  // 9. Food Provider Menu - REAL BACKEND DATA
+  async getFoodProviderMenu(providerId) {
+    try {
+      console.log(`📋 Fetching menu for food provider: ${providerId}`);
+      
+      const endpoints = [
+        `/food-providers/${providerId}/menu`,
+        `/restaurants/${providerId}/menu`,
+        `/vendors/${providerId}/menu`
+      ];
+      
+      const data = await this.apiCall(endpoints);
+      
+      if (!data) {
+        throw new Error('No menu data received from backend');
+      }
+      
+      console.log('✅ Menu received from backend');
+      return data;
+    } catch (error) {
+      console.error('❌ Menu fetch failed:', error.message);
+      throw new Error('Unable to fetch menu from backend');
+    }
+  }
+
+  // 10. Bookings - REAL BACKEND DATA ONLY
   async getBookingHistory() {
     try {
+      console.log('📋 Fetching booking history from backend...');
       const endpoints = [
         '/student/bookings',
         '/bookings/user',
@@ -691,72 +358,61 @@ class StudentApiService {
         '/bookings'
       ];
       
-      return await this.apiCall(endpoints);
+      const data = await this.apiCall(endpoints);
+      
+      if (!data) {
+        throw new Error('No booking data received from backend');
+      }
+      
+      console.log('✅ Booking history received from backend');
+      return data;
     } catch (error) {
-      console.warn('Booking history endpoints failed, using fallback:', error);
-      return this.generateFallbackData('bookings');
+      console.error('❌ Booking history fetch failed:', error.message);
+      throw new Error('Unable to fetch booking history from backend');
     }
   }
 
-  // 10. Create Booking with fallback
+  // 11. Create Booking - REAL BACKEND DATA ONLY
   async createBooking(bookingData) {
     try {
+      console.log('🏠 Creating booking in backend...');
       const endpoints = ['/bookings', '/booking', '/student/bookings'];
-      let bookingResult = null;
       
       for (const endpoint of endpoints) {
         try {
-          bookingResult = await this.apiCall(endpoint, {
+          const result = await this.apiCall(endpoint, {
             method: 'POST',
             body: JSON.stringify(bookingData)
           });
-          break;
+          
+          console.log('✅ Booking created successfully in backend');
+          
+          // Store booking locally for offline access
+          if (result?.booking) {
+            await this.storeBookingLocally(result.booking);
+            
+            // Send notification
+            await notificationService.notifyBookingConfirmed(result.booking);
+            
+            // Add to recent activity
+            await this.addRecentActivity({
+              type: 'booking_created',
+              message: `Booked ${result.booking.accommodation?.name || 'accommodation'}`,
+              data: { bookingId: result.booking._id }
+            });
+          }
+          
+          return result;
         } catch (error) {
+          console.warn(`⚠️ Booking creation failed for ${endpoint}:`, error.message);
           continue;
         }
       }
       
-      // Fallback simulation if API fails
-      if (!bookingResult) {
-        console.warn('Booking creation API unavailable, simulating booking');
-        bookingResult = {
-          success: true,
-          message: "Booking created successfully",
-          booking: {
-            _id: `booking_${Date.now()}`,
-            accommodation: bookingData.accommodation,
-            student: bookingData.student,
-            check_in_date: bookingData.check_in_date,
-            check_out_date: bookingData.check_out_date,
-            total_amount: bookingData.total_amount,
-            status: "confirmed",
-            created_at: new Date().toISOString(),
-            payment_status: "paid",
-            confirmation_code: `BK${Date.now().toString().slice(-6)}`,
-            isSimulated: true
-          }
-        };
-      }
-
-      // Store booking locally
-      if (bookingResult?.booking) {
-        await this.storeBookingLocally(bookingResult.booking);
-        
-        // Send notification
-        await notificationService.notifyBookingConfirmed(bookingResult.booking);
-        
-        // Add to recent activity
-        await this.addRecentActivity({
-          type: 'booking_created',
-          message: `Booked ${bookingResult.booking.accommodation?.name || 'accommodation'}`,
-          data: { bookingId: bookingResult.booking._id }
-        });
-      }
-
-      return bookingResult;
+      throw new Error('All booking creation endpoints failed');
     } catch (error) {
-      console.error('Error creating booking:', error);
-      throw error;
+      console.error('❌ Booking creation failed:', error.message);
+      throw new Error('Unable to create booking in backend');
     }
   }
 
@@ -964,17 +620,58 @@ class StudentApiService {
     }
   }
 
-  // Create Order (FAILED - 400)
+  // Create Order - REAL BACKEND DATA ONLY
   async createOrder(orderData) {
-    console.warn('Create order endpoint not available (400)');
-    throw new Error('Order creation feature temporarily unavailable');
+    try {
+      console.log('🛒 Creating order in backend...');
+      const endpoints = [
+        '/orders',
+        '/student/orders',
+        '/food/orders'
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          const result = await this.apiCall(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+          });
+          
+          console.log('✅ Order created successfully in backend');
+          
+          // Store order locally for offline access
+          if (result?.order || result) {
+            await this.storeOrderLocally(result.order || result);
+            
+            // Send notification
+            await notificationService.notifyOrderPlaced(result.order || result);
+            
+            // Add to recent activity
+            await this.addRecentActivity({
+              type: 'order_placed',
+              message: `Placed order from ${result.provider?.name || 'restaurant'}`,
+              data: { orderId: result._id || result.id }
+            });
+          }
+          
+          return result;
+        } catch (error) {
+          console.warn(`⚠️ Order creation failed for ${endpoint}:`, error.message);
+          continue;
+        }
+      }
+      
+      throw new Error('All order creation endpoints failed');
+    } catch (error) {
+      console.error('❌ Order creation failed:', error.message);
+      throw new Error('Unable to create order in backend');
+    }
   }
 
-  // 12. Orders with fallback + local storage integration
+  // Get Order History - REAL BACKEND DATA ONLY
   async getOrderHistory() {
     try {
-      let apiOrders = [];
-      
+      console.log('📋 Fetching order history from backend...');
       const endpoints = [
         '/student/orders',
         '/orders/user',
@@ -982,57 +679,39 @@ class StudentApiService {
         '/orders'
       ];
       
-      try {
-        apiOrders = await this.apiCall(endpoints);
-        if (!Array.isArray(apiOrders) && apiOrders.orders) {
-          apiOrders = apiOrders.orders;
-        }
-        if (!Array.isArray(apiOrders)) {
-          apiOrders = [];
-        }
-      } catch (error) {
-        console.warn('Order history endpoints failed, using fallback:', error);
-        apiOrders = this.generateFallbackData('orders');
+      const data = await this.apiCall(endpoints);
+      
+      if (!data) {
+        throw new Error('No order data received from backend');
       }
       
-      // Get locally stored orders
-      const localOrders = await this.getLocalOrders();
+      let orders = [];
+      if (Array.isArray(data)) {
+        orders = data;
+      } else if (data && data.orders && Array.isArray(data.orders)) {
+        orders = data.orders;
+      }
       
-      // Merge local and API orders, removing duplicates
-      const allOrders = [...localOrders];
-      
-      apiOrders.forEach(apiOrder => {
-        const exists = localOrders.some(localOrder => 
-          (localOrder._id === apiOrder._id) || 
-          (localOrder.id === apiOrder.id) ||
-          (localOrder.orderId === apiOrder.orderId)
-        );
-        
-        if (!exists) {
-          allOrders.push(apiOrder);
-        }
-      });
+      console.log(`✅ Received ${orders.length} orders from backend`);
       
       // Sort by creation date (newest first)
-      allOrders.sort((a, b) => {
+      orders.sort((a, b) => {
         const dateA = new Date(a.createdAt || a.created_at || a.orderDate || 0);
         const dateB = new Date(b.createdAt || b.created_at || b.orderDate || 0);
         return dateB - dateA;
       });
       
-      return allOrders;
+      return orders;
     } catch (error) {
-      console.error('Error in getOrderHistory:', error);
-      // Fallback to local orders only
-      return await this.getLocalOrders();
+      console.error('❌ Order history fetch failed:', error.message);
+      throw new Error('Unable to fetch order history from backend');
     }
   }
 
-  // Create Food Order with local storage + notifications
+  // Create Food Order - REAL BACKEND DATA ONLY
   async createFoodOrder(orderData) {
     try {
-      let createdOrder = null;
-      
+      console.log('🍕 Creating food order in backend...');
       const endpoints = [
         '/food/orders',
         '/orders/food', 
@@ -1042,69 +721,39 @@ class StudentApiService {
       
       for (const endpoint of endpoints) {
         try {
-          createdOrder = await this.apiCall(endpoint, {
+          const result = await this.apiCall(endpoint, {
             method: 'POST',
             body: JSON.stringify(orderData)
           });
-          break;
+          
+          console.log('✅ Food order created successfully in backend');
+          
+          // Store order locally for offline access
+          if (result?.order || result) {
+            await this.storeOrderLocally(result.order || result);
+            
+            // Send notification
+            await notificationService.notifyOrderPlaced(result.order || result);
+            
+            // Add to recent activity
+            await this.addRecentActivity({
+              type: 'order_placed',
+              message: `Placed food order from ${result.provider?.name || 'restaurant'}`,
+              data: { orderId: result._id || result.id }
+            });
+          }
+          
+          return result;
         } catch (error) {
+          console.warn(`⚠️ Food order creation failed for ${endpoint}:`, error.message);
           continue;
         }
       }
       
-      // If API failed, create simulated order
-      if (!createdOrder) {
-        console.warn('Food order creation API unavailable, simulating food order');
-        const subtotal = orderData.subtotal || orderData.items?.reduce((sum, item) => 
-          sum + ((item.price || 0) * (item.quantity || 1)), 0) || 0;
-        const deliveryFee = orderData.deliveryFee || 50;
-        const total = orderData.totalAmount || (subtotal + deliveryFee);
-        
-        const orderId = `FO${Date.now().toString().slice(-6)}`;
-        
-        createdOrder = {
-          _id: orderId,
-          id: orderId,
-          orderId: orderId,
-          provider: {
-            _id: orderData.providerId,
-            name: orderData.providerName || 'Food Provider',
-            image: 'https://picsum.photos/100/100?random=food'
-          },
-          items: orderData.items || [],
-          deliveryAddress: orderData.deliveryAddress,
-          phone: orderData.phone,
-          notes: orderData.notes || '',
-          paymentMethod: orderData.paymentMethod || 'cash',
-          subtotal: subtotal,
-          deliveryFee: deliveryFee,
-          totalAmount: total,
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-          estimatedDelivery: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-          orderNumber: orderId,
-          isSimulated: true,
-          type: 'food'
-        };
-      }
-      
-      // Store order locally for immediate retrieval
-      await this.storeOrderLocally(createdOrder);
-      
-      // Send notification
-      await notificationService.notifyOrderPlaced(createdOrder);
-      
-      // Add to recent activity
-      await this.addRecentActivity({
-        type: 'order_placed',
-        message: `Placed order from ${createdOrder.provider?.name || 'restaurant'}`,
-        data: { orderId: createdOrder._id || createdOrder.id }
-      });
-      
-      return createdOrder;
+      throw new Error('All food order creation endpoints failed');
     } catch (error) {
-      console.error('Error creating food order:', error);
-      throw error;
+      console.error('❌ Food order creation failed:', error.message);
+      throw new Error('Unable to create food order in backend');
     }
   }
 

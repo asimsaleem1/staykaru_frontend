@@ -1,733 +1,524 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View,
-    Text,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    Alert,
-    Image,
-    Switch,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Switch, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
-import authService from '../../services/authService';
-import { fetchFromBackend } from '../../utils/networkUtils';
+import { COLORS } from '../../utils/constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
-const AdminProfileScreen = ({ navigation }) => {
-    const [user, setUser] = useState(null);
-    const [profile, setProfile] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        employeeId: '',
-        department: '',
-        role: 'admin',
-        permissions: [],
-        profileImage: null,
-        lastLogin: null,
-    });
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [editMode, setEditMode] = useState(false);
-    const [securitySettings, setSecuritySettings] = useState({
-        twoFactorEnabled: false,
-        sessionTimeout: 30,
-        loginNotifications: true,
-    });
-    const [notificationSettings, setNotificationSettings] = useState({
-        systemAlerts: true,
-        userActivityAlerts: true,
-        financialAlerts: true,
-        securityAlerts: true,
-        dailyReports: true,
-        weeklyReports: true,
-    });
+const { width } = Dimensions.get('window');
 
-    const departmentOptions = [
-        'Administration',
-        'Customer Support',
-        'Technical',
-        'Finance',
-        'Marketing',
-        'Operations'
-    ];
+const AdminProfileScreen = () => {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
+  const [editForm, setEditForm] = useState({});
+  const navigation = useNavigation();
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
+  useEffect(() => {
+    loadUserData();
+  }, []);
 
-    const loadProfile = async () => {
-        try {
-            setLoading(true);
-            const currentUser = await authService.getCurrentUser();
-            setUser(currentUser);
-
-            // Fetch admin profile data
-            const profileRes = await fetchFromBackend(`/admin/profile/${currentUser.id}`);
-            
-            if (profileRes.success) {
-                setProfile({
-                    name: profileRes.data.name || currentUser.name || '',
-                    email: profileRes.data.email || currentUser.email || '',
-                    phone: profileRes.data.phone || '',
-                    employeeId: profileRes.data.employeeId || '',
-                    department: profileRes.data.department || '',
-                    role: profileRes.data.role || 'admin',
-                    permissions: profileRes.data.permissions || [],
-                    profileImage: profileRes.data.profileImage || null,
-                    lastLogin: profileRes.data.lastLogin || null,
-                });
-                setSecuritySettings(profileRes.data.securitySettings || securitySettings);
-                setNotificationSettings(profileRes.data.notificationSettings || notificationSettings);
-            }
-
-            console.log('✅ Admin profile loaded successfully');
-        } catch (error) {
-            console.error('❌ Error loading admin profile:', error);
-            Alert.alert('Error', 'Failed to load profile data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSaveProfile = async () => {
-        try {
-            setSaving(true);
-            
-            const profileData = {
-                ...profile,
-                securitySettings,
-                notificationSettings
-            };
-
-            const response = await fetchFromBackend(`/admin/profile/${user.id}`, {
-                method: 'PUT',
-                data: profileData
-            });
-
-            if (response.success) {
-                Alert.alert('Success', 'Profile updated successfully');
-                setEditMode(false);
-                await loadProfile();
-            } else {
-                Alert.alert('Error', 'Failed to update profile');
-            }
-        } catch (error) {
-            console.error('❌ Error saving admin profile:', error);
-            Alert.alert('Error', 'Failed to update profile');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleImagePicker = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
+  const loadUserData = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        setUserData(user);
+        setEditForm({
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          gender: user.gender || '',
+          countryCode: user.countryCode || '',
+          identificationType: user.identificationType || '',
+          identificationNumber: user.identificationNumber || '',
         });
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (!result.canceled) {
-            setProfile({ ...profile, profileImage: result.assets[0].uri });
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.clear();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }
         }
-    };
+      ]
+    );
+  };
 
-    const handleChangePassword = () => {
-        navigation.navigate('AdminChangePassword');
-    };
+  const handleSaveProfile = async () => {
+    try {
+      const updatedUser = { ...userData, ...editForm };
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setUserData(updatedUser);
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    }
+  };
 
-    const handle2FASetup = () => {
-        navigation.navigate('Admin2FASetup');
-    };
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This action cannot be undone. Are you sure you want to delete your account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Account Deleted', 'Your account has been deleted.');
+          }
+        }
+      ]
+    );
+  };
 
-    const handleActivityLog = () => {
-        navigation.navigate('AdminActivityLog');
-    };
+  const profileSections = [
+    {
+      title: 'Personal Information',
+      icon: 'person',
+      color: '#4F8EF7',
+      items: [
+        { label: 'Full Name', value: editForm.name, key: 'name', editable: true },
+        { label: 'Email', value: editForm.email, key: 'email', editable: true },
+        { label: 'Phone', value: editForm.phone, key: 'phone', editable: true },
+        { label: 'Gender', value: editForm.gender, key: 'gender', editable: true },
+        { label: 'Country Code', value: editForm.countryCode, key: 'countryCode', editable: true },
+        { label: 'ID Type', value: editForm.identificationType, key: 'identificationType', editable: true },
+        { label: 'ID Number', value: editForm.identificationNumber, key: 'identificationNumber', editable: true },
+      ]
+    },
+    {
+      title: 'Account Settings',
+      icon: 'settings',
+      color: '#FF9500',
+      items: [
+        { label: 'Role', value: userData?.role || 'Admin', editable: false },
+        { label: 'User ID', value: userData?.id || 'N/A', editable: false },
+        { label: 'Account Status', value: 'Active', editable: false },
+        { label: 'Last Login', value: 'Today', editable: false },
+      ]
+    },
+    {
+      title: 'Preferences',
+      icon: 'options',
+      color: '#34C759',
+      items: [
+        { label: 'Notifications', value: notificationsEnabled, type: 'switch', key: 'notifications' },
+        { label: 'Dark Mode', value: darkModeEnabled, type: 'switch', key: 'darkMode' },
+        { label: 'Auto Backup', value: autoBackupEnabled, type: 'switch', key: 'autoBackup' },
+      ]
+    }
+  ];
 
-    if (loading) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Loading Profile...</Text>
-                </View>
-            </SafeAreaView>
-        );
+  const renderProfileItem = (item, sectionIndex, itemIndex) => {
+    if (item.type === 'switch') {
+      return (
+        <View key={itemIndex} style={styles.profileItem}>
+          <View style={styles.profileItemLeft}>
+            <Text style={styles.profileItemLabel}>{item.label}</Text>
+          </View>
+          <Switch
+            value={item.value}
+            onValueChange={(value) => {
+              switch (item.key) {
+                case 'notifications':
+                  setNotificationsEnabled(value);
+                  break;
+                case 'darkMode':
+                  setDarkModeEnabled(value);
+                  break;
+                case 'autoBackup':
+                  setAutoBackupEnabled(value);
+                  break;
+              }
+            }}
+            trackColor={{ false: '#767577', true: COLORS.primary }}
+            thumbColor={item.value ? '#fff' : '#f4f3f4'}
+          />
+        </View>
+      );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <LinearGradient
-                colors={['#1976D2', '#42A5F5']}
-                style={styles.header}
-            >
-                <View style={styles.headerContent}>
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        style={styles.backButton}
-                    >
-                        <Icon name="arrow-back" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Admin Profile</Text>
-                    <TouchableOpacity
-                        onPress={() => editMode ? handleSaveProfile() : setEditMode(true)}
-                        style={styles.editButton}
-                    >
-                        <Icon 
-                            name={editMode ? "save" : "edit"} 
-                            size={24} 
-                            color="#fff" 
-                        />
-                    </TouchableOpacity>
-                </View>
-            </LinearGradient>
-
-            <ScrollView style={styles.content}>
-                {/* Profile Image Section */}
-                <View style={styles.profileSection}>
-                    <TouchableOpacity 
-                        onPress={editMode ? handleImagePicker : null}
-                        style={styles.profileImageContainer}
-                    >
-                        {profile.profileImage ? (
-                            <Image source={{ uri: profile.profileImage }} style={styles.profileImage} />
-                        ) : (
-                            <View style={styles.defaultProfileImage}>
-                                <Icon name="admin-panel-settings" size={60} color="#fff" />
-                            </View>
-                        )}
-                        {editMode && (
-                            <View style={styles.editImageOverlay}>
-                                <Icon name="camera-alt" size={20} color="#fff" />
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                    <Text style={styles.profileName}>{profile.name}</Text>
-                    <Text style={styles.profileEmail}>{profile.email}</Text>
-                    <View style={styles.roleBadge}>
-                        <Text style={styles.roleText}>Administrator</Text>
-                    </View>
-                    {profile.lastLogin && (
-                        <Text style={styles.lastLogin}>
-                            Last login: {new Date(profile.lastLogin).toLocaleString('en-PK')}
-                        </Text>
-                    )}
-                </View>
-
-                {/* Basic Information */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Basic Information</Text>
-                    
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Full Name</Text>
-                        <TextInput
-                            style={[styles.textInput, !editMode && styles.disabledInput]}
-                            value={profile.name}
-                            onChangeText={(text) => setProfile({ ...profile, name: text })}
-                            editable={editMode}
-                            placeholder="Enter your full name"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Email</Text>
-                        <TextInput
-                            style={[styles.textInput, styles.disabledInput]}
-                            value={profile.email}
-                            editable={false}
-                            placeholder="Email address"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Phone Number</Text>
-                        <TextInput
-                            style={[styles.textInput, !editMode && styles.disabledInput]}
-                            value={profile.phone}
-                            onChangeText={(text) => setProfile({ ...profile, phone: text })}
-                            editable={editMode}
-                            placeholder="+92 300 1234567"
-                            keyboardType="phone-pad"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Employee ID</Text>
-                        <TextInput
-                            style={[styles.textInput, !editMode && styles.disabledInput]}
-                            value={profile.employeeId}
-                            onChangeText={(text) => setProfile({ ...profile, employeeId: text })}
-                            editable={editMode}
-                            placeholder="Employee ID"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Department</Text>
-                        <TextInput
-                            style={[styles.textInput, !editMode && styles.disabledInput]}
-                            value={profile.department}
-                            onChangeText={(text) => setProfile({ ...profile, department: text })}
-                            editable={editMode}
-                            placeholder="Select department"
-                        />
-                    </View>
-                </View>
-
-                {/* Security Settings */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Security Settings</Text>
-                    
-                    <View style={styles.switchRow}>
-                        <View style={styles.switchContent}>
-                            <Text style={styles.switchLabel}>Two-Factor Authentication</Text>
-                            <Text style={styles.switchDescription}>
-                                Add an extra layer of security to your account
-                            </Text>
-                        </View>
-                        <Switch
-                            value={securitySettings.twoFactorEnabled}
-                            onValueChange={(value) => 
-                                setSecuritySettings({
-                                    ...securitySettings,
-                                    twoFactorEnabled: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                        <View style={styles.switchContent}>
-                            <Text style={styles.switchLabel}>Login Notifications</Text>
-                            <Text style={styles.switchDescription}>
-                                Get notified when someone logs into your account
-                            </Text>
-                        </View>
-                        <Switch
-                            value={securitySettings.loginNotifications}
-                            onValueChange={(value) => 
-                                setSecuritySettings({
-                                    ...securitySettings,
-                                    loginNotifications: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Session Timeout (minutes)</Text>
-                        <TextInput
-                            style={[styles.textInput, !editMode && styles.disabledInput]}
-                            value={securitySettings.sessionTimeout?.toString()}
-                            onChangeText={(text) => 
-                                setSecuritySettings({
-                                    ...securitySettings,
-                                    sessionTimeout: parseInt(text) || 30
-                                })
-                            }
-                            editable={editMode}
-                            placeholder="30"
-                            keyboardType="numeric"
-                        />
-                    </View>
-                </View>
-
-                {/* Notification Settings */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Notification Preferences</Text>
-                    
-                    <View style={styles.switchRow}>
-                        <Text style={styles.switchLabel}>System Alerts</Text>
-                        <Switch
-                            value={notificationSettings.systemAlerts}
-                            onValueChange={(value) => 
-                                setNotificationSettings({
-                                    ...notificationSettings,
-                                    systemAlerts: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                        <Text style={styles.switchLabel}>User Activity Alerts</Text>
-                        <Switch
-                            value={notificationSettings.userActivityAlerts}
-                            onValueChange={(value) => 
-                                setNotificationSettings({
-                                    ...notificationSettings,
-                                    userActivityAlerts: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                        <Text style={styles.switchLabel}>Financial Alerts</Text>
-                        <Switch
-                            value={notificationSettings.financialAlerts}
-                            onValueChange={(value) => 
-                                setNotificationSettings({
-                                    ...notificationSettings,
-                                    financialAlerts: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                        <Text style={styles.switchLabel}>Security Alerts</Text>
-                        <Switch
-                            value={notificationSettings.securityAlerts}
-                            onValueChange={(value) => 
-                                setNotificationSettings({
-                                    ...notificationSettings,
-                                    securityAlerts: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                        <Text style={styles.switchLabel}>Daily Reports</Text>
-                        <Switch
-                            value={notificationSettings.dailyReports}
-                            onValueChange={(value) => 
-                                setNotificationSettings({
-                                    ...notificationSettings,
-                                    dailyReports: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                        <Text style={styles.switchLabel}>Weekly Reports</Text>
-                        <Switch
-                            value={notificationSettings.weeklyReports}
-                            onValueChange={(value) => 
-                                setNotificationSettings({
-                                    ...notificationSettings,
-                                    weeklyReports: value
-                                })
-                            }
-                            trackColor={{ false: '#ccc', true: '#1976D2' }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-                </View>
-
-                {/* Account Actions */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account Actions</Text>
-                    
-                    <TouchableOpacity style={styles.actionRow} onPress={handleChangePassword}>
-                        <Icon name="lock" size={24} color="#666" />
-                        <Text style={styles.actionText}>Change Password</Text>
-                        <Icon name="chevron-right" size={24} color="#ccc" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionRow} onPress={handle2FASetup}>
-                        <Icon name="security" size={24} color="#666" />
-                        <Text style={styles.actionText}>Two-Factor Authentication Setup</Text>
-                        <Icon name="chevron-right" size={24} color="#ccc" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionRow} onPress={handleActivityLog}>
-                        <Icon name="history" size={24} color="#666" />
-                        <Text style={styles.actionText}>Activity Log</Text>
-                        <Icon name="chevron-right" size={24} color="#ccc" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Permissions */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Current Permissions</Text>
-                    <View style={styles.permissionsGrid}>
-                        {profile.permissions?.length > 0 ? (
-                            profile.permissions.map((permission, index) => (
-                                <View key={index} style={styles.permissionChip}>
-                                    <Icon name="check-circle" size={16} color="#4CAF50" />
-                                    <Text style={styles.permissionText}>{permission}</Text>
-                                </View>
-                            ))
-                        ) : (
-                            <View style={styles.permissionChip}>
-                                <Icon name="admin-panel-settings" size={16} color="#1976D2" />
-                                <Text style={styles.permissionText}>Full Admin Access</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-
-                {editMode && (
-                    <View style={styles.section}>
-                        <TouchableOpacity
-                            style={[styles.saveButton, saving && styles.disabledButton]}
-                            onPress={handleSaveProfile}
-                            disabled={saving}
-                        >
-                            <Text style={styles.saveButtonText}>
-                                {saving ? 'Saving...' : 'Save Changes'}
-                            </Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                            style={styles.cancelButton}
-                            onPress={() => {
-                                setEditMode(false);
-                                loadProfile();
-                            }}
-                        >
-                            <Text style={styles.cancelButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </ScrollView>
-        </SafeAreaView>
+      <View key={itemIndex} style={styles.profileItem}>
+        <View style={styles.profileItemLeft}>
+          <Text style={styles.profileItemLabel}>{item.label}</Text>
+          {isEditing && item.editable ? (
+            <TextInput
+              style={styles.profileItemInput}
+              value={item.value}
+              onChangeText={(text) => setEditForm({ ...editForm, [item.key]: text })}
+              placeholder={`Enter ${item.label.toLowerCase()}`}
+            />
+          ) : (
+            <Text style={styles.profileItemValue}>{item.value || 'Not set'}</Text>
+          )}
+        </View>
+        {isEditing && item.editable && (
+          <Ionicons name="create-outline" size={20} color="#666" />
+        )}
+      </View>
     );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.profileImageContainer}>
+              <Ionicons name="person" size={40} color="#fff" />
+            </View>
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle}>{userData?.name || 'Administrator'}</Text>
+              <Text style={styles.headerSubtitle}>{userData?.email || 'admin@staykaru.com'}</Text>
+              <Text style={styles.headerRole}>{userData?.role || 'Admin'}</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, isEditing ? styles.saveButton : styles.editButton]}
+            onPress={() => {
+              if (isEditing) {
+                handleSaveProfile();
+              } else {
+                setIsEditing(true);
+              }
+            }}
+          >
+            <Ionicons 
+              name={isEditing ? "checkmark" : "create"} 
+              size={20} 
+              color="#fff" 
+            />
+            <Text style={styles.actionButtonText}>
+              {isEditing ? 'Save Changes' : 'Edit Profile'}
+            </Text>
+          </TouchableOpacity>
+
+          {isEditing && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => {
+                setIsEditing(false);
+                loadUserData();
+              }}
+            >
+              <Ionicons name="close" size={20} color="#FF3B30" />
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Profile Sections */}
+        {profileSections.map((section, sectionIndex) => (
+          <View key={sectionIndex} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: section.color + '20' }]}>
+                <Ionicons name={section.icon} size={20} color={section.color} />
+              </View>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+            </View>
+            
+            <View style={styles.sectionContent}>
+              {section.items.map((item, itemIndex) => renderProfileItem(item, sectionIndex, itemIndex))}
+            </View>
+          </View>
+        ))}
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIcon, { backgroundColor: '#5856D6' + '20' }]}>
+              <Ionicons name="flash" size={20} color="#5856D6" />
+            </View>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+          </View>
+          
+          <View style={styles.quickActions}>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('NotificationManagement')}>
+              <Ionicons name="notifications" size={24} color="#FF3B30" />
+              <Text style={styles.quickActionText}>Send Notification</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('ExportReports')}>
+              <Ionicons name="document-text" size={24} color="#5856D6" />
+              <Text style={styles.quickActionText}>Generate Report</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('SystemAdministration')}>
+              <Ionicons name="settings" size={24} color="#FF9500" />
+              <Text style={styles.quickActionText}>System Settings</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('AdminTestRunner')}>
+              <Ionicons name="bug" size={24} color="#FF6B6B" />
+              <Text style={styles.quickActionText}>Run Tests</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIcon, { backgroundColor: '#FF3B30' + '20' }]}>
+              <Ionicons name="warning" size={20} color="#FF3B30" />
+            </View>
+            <Text style={styles.sectionTitle}>Danger Zone</Text>
+          </View>
+          
+          <View style={styles.dangerZone}>
+            <TouchableOpacity style={styles.dangerButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={20} color="#FF9500" />
+              <Text style={styles.dangerButtonText}>Logout</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.dangerButton} onPress={handleDeleteAccount}>
+              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+              <Text style={[styles.dangerButtonText, { color: '#FF3B30' }]}>Delete Account</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        fontSize: 16,
-        color: '#666',
-        marginTop: 10,
-    },
-    header: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-    },
-    headerContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    backButton: {
-        padding: 8,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
-        flex: 1,
-        textAlign: 'center',
-        marginRight: 40,
-    },
-    editButton: {
-        padding: 8,
-    },
-    content: {
-        flex: 1,
-    },
-    profileSection: {
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#fff',
-        marginBottom: 10,
-    },
-    profileImageContainer: {
-        position: 'relative',
-        marginBottom: 15,
-    },
-    profileImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-    },
-    defaultProfileImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: '#1976D2',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    editImageOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        backgroundColor: '#4CAF50',
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#fff',
-    },
-    profileName: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
-    },
-    profileEmail: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 10,
-    },
-    roleBadge: {
-        backgroundColor: '#1976D2',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 15,
-        marginBottom: 10,
-    },
-    roleText: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-    },
-    lastLogin: {
-        fontSize: 12,
-        color: '#999',
-    },
-    section: {
-        backgroundColor: '#fff',
-        padding: 20,
-        marginBottom: 10,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 15,
-    },
-    inputGroup: {
-        marginBottom: 15,
-    },
-    inputLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 5,
-    },
-    textInput: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        backgroundColor: '#fff',
-    },
-    disabledInput: {
-        backgroundColor: '#f5f5f5',
-        color: '#666',
-    },
-    switchRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    switchContent: {
-        flex: 1,
-        marginRight: 15,
-    },
-    switchLabel: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
-    },
-    switchDescription: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
-    actionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    actionText: {
-        fontSize: 16,
-        color: '#333',
-        flex: 1,
-        marginLeft: 15,
-    },
-    permissionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginTop: 10,
-    },
-    permissionChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f0f8ff',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        margin: 4,
-        borderWidth: 1,
-        borderColor: '#e3f2fd',
-    },
-    permissionText: {
-        fontSize: 12,
-        color: '#1976D2',
-        fontWeight: '500',
-        marginLeft: 4,
-    },
-    saveButton: {
-        backgroundColor: '#1976D2',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    saveButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    cancelButton: {
-        backgroundColor: '#f5f5f5',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    disabledButton: {
-        opacity: 0.7,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FB',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    padding: 24,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  headerText: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    opacity: 0.9,
+    marginBottom: 2,
+  },
+  headerRole: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.8,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  editButton: {
+    backgroundColor: COLORS.primary,
+  },
+  saveButton: {
+    backgroundColor: '#34C759',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    color: '#FF3B30',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  section: {
+    margin: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  sectionContent: {
+    padding: 16,
+  },
+  profileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f8f8f8',
+  },
+  profileItemLeft: {
+    flex: 1,
+  },
+  profileItemLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  profileItemValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  profileItemInput: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    padding: 8,
+    marginTop: 4,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 16,
+    gap: 12,
+  },
+  quickActionButton: {
+    width: (width - 80) / 2,
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+  },
+  quickActionText: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  dangerZone: {
+    padding: 16,
+    gap: 12,
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff5f5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffebee',
+  },
+  dangerButtonText: {
+    fontSize: 16,
+    color: '#FF9500',
+    fontWeight: '600',
+    marginLeft: 12,
+  },
 });
 
-export default AdminProfileScreen;
+export default AdminProfileScreen; 

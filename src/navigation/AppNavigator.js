@@ -13,29 +13,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import ChatbotScreen_new from '../screens/student/ChatbotScreen_new.js';
 
-// Import new admin screens
-import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen_new';
-import AdminUserManagementScreen from '../screens/admin/AdminUserManagementScreen';
-import AdminContentModerationScreen from '../screens/admin/AdminContentModerationScreen';
-import AdminFinancialManagementScreen from '../screens/admin/AdminFinancialManagementScreen';
-import AdminSystemSettingsScreen from '../screens/admin/AdminSystemSettingsScreen';
-import AdminReportsCenterScreen from '../screens/admin/AdminReportsCenterScreen';
-import AdminAnalyticsScreen from '../screens/admin/AdminAnalyticsScreen';
-import AdminAccommodationsScreen from '../screens/admin/AdminAccommodationsScreen';
-import AdminFoodProvidersScreen from '../screens/admin/AdminFoodProvidersScreen';
-import AdminBookingsScreen from '../screens/admin/AdminBookingsScreen';
-import AdminOrdersScreen from '../screens/admin/AdminOrdersScreen';
-import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
-import AdminAccommodationDetailScreen from '../screens/admin/AdminAccommodationDetailScreen';
-import AdminFoodProviderDetailScreen from '../screens/admin/AdminFoodProviderDetailScreen';
-import AdminAnnouncementsScreen from '../screens/admin/AdminAnnouncementsScreen';
-import AdminBookingDetailScreen from '../screens/admin/AdminBookingDetailScreen';
-import AdminOrderDetailScreen from '../screens/admin/AdminOrderDetailScreen';
-import AdminSystemHealthScreen from '../screens/admin/AdminSystemHealthScreen';
-import AdminSystemLogsScreen from '../screens/admin/AdminSystemLogsScreen';
-import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
-import AdminModuleTestScreen from '../screens/admin/AdminModuleTestScreen';
-import AdminEndpointTestScreen from '../screens/admin/AdminEndpointTestScreen';
+// Import new admin stack navigator
+import AdminStackNavigator from './AdminStackNavigator';
 
 // Import new student screens
 import ChatScreen_new from '../screens/student/ChatScreen_new';
@@ -86,14 +65,16 @@ import BookingsScreen from '../screens/landlord/BookingsScreen';
 import EarningsScreen from '../screens/landlord/EarningsScreen';
 
 // Import new food provider screens
-import FoodProviderDashboardScreen from '../screens/foodProvider/FoodProviderDashboardScreen';
-import FoodProviderProfileScreen from '../screens/foodProvider/FoodProviderProfileScreen';
-import MenuManagementScreen from '../screens/foodProvider/MenuManagementScreen';
-import OrderManagementScreen from '../screens/foodProvider/OrderManagementScreen';
-import InventoryManagementScreen from '../screens/foodProvider/InventoryManagementScreen';
-import ReviewsRatingsScreen from '../screens/foodProvider/ReviewsRatingsScreen';
-import AnalyticsReportsScreen from '../screens/foodProvider/AnalyticsReportsScreen';
-import SettingsScreen from '../screens/foodProvider/SettingsScreen';
+import FoodProviderDashboardScreen from '../screens/foodProvider/FoodProviderDashboardScreen.js';
+import FoodProviderProfileScreen from '../screens/foodProvider/FoodProviderProfileScreen.js';
+import MenuManagementScreen from '../screens/foodProvider/MenuManagementScreen.js';
+import OrderManagementScreen from '../screens/foodProvider/OrderManagementScreen.js';
+import InventoryManagementScreen from '../screens/foodProvider/InventoryManagementScreen.js';
+import ReviewsRatingsScreen from '../screens/foodProvider/ReviewsRatingsScreen.js';
+import AnalyticsReportsScreen from '../screens/foodProvider/AnalyticsReportsScreen.js';
+import SettingsScreen from '../screens/foodProvider/SettingsScreen.js';
+import AddMenuItemScreen from '../screens/foodProvider/AddMenuItemScreen.js';
+import NotificationsCenterScreen from '../screens/foodProvider/NotificationsCenterScreen.js';
 
 const Stack = createStackNavigator();
 
@@ -141,7 +122,7 @@ const AppNavigator = () => {
 
     switch (userData.role) {
       case 'admin':
-        setInitialRoute('AdminDashboard');
+        setInitialRoute('AdminStack');
         break;
       case 'student':
         setInitialRoute('StudentDashboard');
@@ -200,6 +181,108 @@ const AppNavigator = () => {
             headerShown: false
           }}
         />
+        
+        {/* New Admin Stack Navigator */}
+        <Stack.Screen
+          name="AdminStack" 
+          component={AdminStackNavigator}
+          options={{ 
+            headerShown: false
+          }}
+        />
+
+        {/* Student Screens - Updated with correct navigation names */}
+        <Stack.Screen
+          name="ChatScreen" 
+          component={ChatScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="Chat" 
+          component={ChatScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="Support" 
+          component={SupportScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="SupportScreen" 
+          component={SupportScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="Notifications" 
+          component={NotificationsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="NotificationsScreen" 
+          component={NotificationsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="StudentProfile" 
+          component={StudentProfileScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="StudentProfileScreen" 
+          component={StudentProfileScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="SafetyEmergency" 
+          component={SafetyEmergencyScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="SafetyEmergencyScreen" 
+          component={SafetyEmergencyScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="SocialFeed" 
+          component={SocialFeedScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="SocialFeedScreen" 
+          component={SocialFeedScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="UnifiedMapScreen" 
+          component={UnifiedMapScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
         <Stack.Screen
           name="AccommodationsList" 
           component={AccommodationsListScreen_new}
@@ -207,44 +290,128 @@ const AppNavigator = () => {
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="AccommodationDetail" 
+        <Stack.Screen
+          name="AccommodationsListScreen" 
+          component={AccommodationsListScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="AccommodationDetails" 
           component={AccommodationDetailsScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="AccommodationDetailsScreen" 
+          component={AccommodationDetailsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="MyBookingsScreen" 
+          component={MyBookingsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="MyBookings" 
           component={MyBookingsScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="BookingDetails" 
+        <Stack.Screen
+          name="BookingHistory" 
+          component={MyBookingsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="BookingDetailsScreen" 
           component={BookingDetailsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="FoodProviders" 
+          component={FoodProvidersScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="FoodProvidersScreen" 
+          component={FoodProvidersScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="FoodProvidersList" 
           component={FoodProvidersScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="FoodProviderDetail" 
+        <Stack.Screen
+          name="FoodSearch" 
+          component={FoodProvidersScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="FoodProviderDetails" 
           component={FoodProviderDetailsScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="FoodProviderDetailsScreen" 
+          component={FoodProviderDetailsScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="FoodOrderCheckoutScreen" 
+          component={FoodOrderCheckoutScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="FoodOrderCheckout" 
           component={FoodOrderCheckoutScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="MyOrdersScreen" 
+          component={MyOrdersScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="MyOrders" 
+          component={MyOrdersScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="OrderDetailsScreen" 
+          component={OrderDetailsScreen_new}
           options={{ 
             headerShown: false
           }}
@@ -256,77 +423,42 @@ const AppNavigator = () => {
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="AccommodationSearch" 
+          component={AccommodationsListScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="MapViewScreen" 
+          component={MapViewScreen_new}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="MapView" 
           component={MapViewScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Chat" 
-          component={ChatScreen_new}
+        <Stack.Screen
+          name="WriteReviewScreen" 
+          component={WriteReviewScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Support" 
-          component={SupportScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="Notifications" 
-          component={NotificationsScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="StudentProfile" 
-          component={StudentProfileScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AccommodationMap" 
-          component={MapViewScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="UnifiedMap" 
-          component={UnifiedMapScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="SafetyEmergency" 
-          component={SafetyEmergencyScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="SocialFeed" 
-          component={SocialFeedScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
+        <Stack.Screen
           name="WriteReview" 
           component={WriteReviewScreen_new}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
           name="RecommendationSystem" 
           component={RecommendationSystemScreen}
           options={{ 
@@ -334,159 +466,14 @@ const AppNavigator = () => {
           }}
         />
         <Stack.Screen
-          name="AdminDashboard" 
-          component={AdminDashboardScreen}
-          options={{ 
-            headerShown: false // Admin screens handle their own headers
-          }}
-        />
-        <Stack.Screen 
-          name="AdminUserManagement" 
-          component={AdminUserManagementScreen}
+          name="RecommendationSystemScreen" 
+          component={RecommendationSystemScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="AdminContentModeration" 
-          component={AdminContentModerationScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminFinancialManagement" 
-          component={AdminFinancialManagementScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminSystemSettings" 
-          component={AdminSystemSettingsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminReportsCenter" 
-          component={AdminReportsCenterScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminAnalytics" 
-          component={AdminAnalyticsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminModuleTest" 
-          component={AdminModuleTestScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminEndpointTest" 
-          component={AdminEndpointTestScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminAccommodations" 
-          component={AdminAccommodationsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminFoodProviders" 
-          component={AdminFoodProvidersScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminBookings" 
-          component={AdminBookingsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminOrders" 
-          component={AdminOrdersScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminNotifications" 
-          component={AdminNotificationsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminAccommodationDetail" 
-          component={AdminAccommodationDetailScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminFoodProviderDetail" 
-          component={AdminFoodProviderDetailScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminAnnouncements" 
-          component={AdminAnnouncementsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminBookingDetail" 
-          component={AdminBookingDetailScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminOrderDetail" 
-          component={AdminOrderDetailScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminSystemHealth" 
-          component={AdminSystemHealthScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminSystemLogs" 
-          component={AdminSystemLogsScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AdminProfile" 
-          component={AdminProfileScreen}
-          options={{ 
-            headerShown: false
-          }}
-        />
+
+        {/* Landlord Screens */}
         <Stack.Screen
           name="LandlordDashboardNew" 
           component={LandlordDashboardScreen}
@@ -494,146 +481,148 @@ const AppNavigator = () => {
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="PropertyListing" 
+        <Stack.Screen
+          name="PropertyListingScreen" 
           component={PropertyListingScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="PropertyEdit" 
+        <Stack.Screen
+          name="PropertyEditScreen" 
           component={PropertyEditScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="PropertyDetail" 
+        <Stack.Screen
+          name="PropertyDetailScreen" 
           component={PropertyDetailScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="PropertyCalendar" 
+        <Stack.Screen
+          name="PropertyCalendarScreen" 
           component={PropertyCalendarScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="BookingManagement" 
+        <Stack.Screen
+          name="LandlordBookingManagementScreen" 
           component={BookingManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Analytics" 
+        <Stack.Screen
+          name="LandlordAnalyticsScreen" 
           component={AnalyticsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="FinancialManagement" 
+        <Stack.Screen
+          name="LandlordFinancialManagementScreen" 
           component={FinancialManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="GuestManagement" 
+        <Stack.Screen
+          name="GuestManagementScreen" 
           component={GuestManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="ReviewsManagement" 
+        <Stack.Screen
+          name="ReviewsManagementScreen" 
           component={ReviewsManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="LandlordNotifications" 
+        <Stack.Screen
+          name="LandlordNotificationsScreen" 
           component={LandlordNotificationsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="LandlordProfile" 
+        <Stack.Screen
+          name="LandlordProfileScreen" 
           component={LandlordProfileScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Maintenance" 
+        <Stack.Screen
+          name="MaintenanceScreen" 
           component={MaintenanceScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="VendorManagement" 
+        <Stack.Screen
+          name="VendorManagementScreen" 
           component={VendorManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="BusinessSettings" 
+        <Stack.Screen
+          name="BusinessSettingsScreen" 
           component={BusinessSettingsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="BookingPreferences" 
+        <Stack.Screen
+          name="BookingPreferencesScreen" 
           component={BookingPreferencesScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="AccountSettings" 
+        <Stack.Screen
+          name="LandlordAccountSettingsScreen" 
           component={AccountSettingsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="AddProperty" 
+        <Stack.Screen
+          name="AddPropertyScreen" 
           component={AddPropertyScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Properties" 
+        <Stack.Screen
+          name="PropertiesScreen" 
           component={PropertiesScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Bookings" 
+        <Stack.Screen
+          name="LandlordBookingsScreen" 
           component={BookingsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="Earnings" 
+        <Stack.Screen
+          name="EarningsScreen" 
           component={EarningsScreen}
           options={{ 
             headerShown: false
           }}
         />
+
+        {/* Food Provider Screens - Updated with correct navigation names */}
         <Stack.Screen
           name="FoodProviderDashboardNew" 
           component={FoodProviderDashboardScreen}
@@ -641,107 +630,135 @@ const AppNavigator = () => {
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
           name="FoodProviderProfile" 
           component={FoodProviderProfileScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="FoodProviderProfileScreen" 
+          component={FoodProviderProfileScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="MenuManagement" 
           component={MenuManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="MenuManagementScreen" 
+          component={MenuManagementScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="OrderManagement" 
           component={OrderManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="FoodProviderOrderManagementScreen" 
+          component={OrderManagementScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="InventoryManagement" 
           component={InventoryManagementScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="InventoryManagementScreen" 
+          component={InventoryManagementScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="ReviewsRatings" 
           component={ReviewsRatingsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="ReviewsRatingsScreen" 
+          component={ReviewsRatingsScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="AnalyticsDashboard" 
+          component={AnalyticsReportsScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="AnalyticsReports" 
           component={AnalyticsReportsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
+        <Stack.Screen
+          name="AnalyticsReportsScreen" 
+          component={AnalyticsReportsScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
           name="Settings" 
           component={SettingsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="FoodProviders" 
-          component={FoodProvidersScreen_new}
+        <Stack.Screen
+          name="FoodProviderSettingsScreen" 
+          component={SettingsScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="AccommodationSearch" 
-          component={AccommodationsListScreen_new}
+        <Stack.Screen
+          name="AddMenuItem" 
+          component={AddMenuItemScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="FoodSearch" 
-          component={FoodProvidersScreen_new}
+        <Stack.Screen
+          name="AddMenuItemScreen" 
+          component={AddMenuItemScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="BookingHistory" 
-          component={MyBookingsScreen_new}
+        <Stack.Screen
+          name="NotificationsCenter" 
+          component={NotificationsCenterScreen}
           options={{ 
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="MyOrders" 
-          component={MyOrdersScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="NotificationList" 
-          component={NotificationsScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="AccommodationDetails" 
-          component={AccommodationDetailsScreen_new}
-          options={{ 
-            headerShown: false
-          }}
-        />
-        <Stack.Screen 
-          name="FoodProviderDetails" 
-          component={FoodProviderDetailsScreen_new}
+        <Stack.Screen
+          name="NotificationsCenterScreen" 
+          component={NotificationsCenterScreen}
           options={{ 
             headerShown: false
           }}

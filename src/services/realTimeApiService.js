@@ -14,10 +14,22 @@ class RealTimeApiService {
         if (!this.token) {
             this.token = await AsyncStorage.getItem('token');
         }
+        console.log('RealTimeApiService using token:', this.token);
         return {
             'Content-Type': 'application/json',
             'Authorization': this.token ? `Bearer ${this.token}` : '',
         };
+    }
+
+    async getUserRole() {
+        try {
+            const userData = await AsyncStorage.getItem('user');
+            if (userData) {
+                const user = JSON.parse(userData);
+                return user.role;
+            }
+        } catch (e) {}
+        return null;
     }
 
     // Real-time subscription system
@@ -105,22 +117,34 @@ class RealTimeApiService {
 
     async fetchAndNotifyAll() {
         try {
-            // Quick health check first using centralized service
             const isHealthy = backendStatusService.getCurrentStatus();
             if (!isHealthy) {
                 console.warn('⚠️ Backend unavailable, skipping real-time fetch');
                 return;
             }
 
-            // Fetch all real-time data with reduced logging
-            const [adminStats, accommodations, foodProviders, orders] = await Promise.all([
-                this.getAdminRealTimeStats(),
-                this.getAccommodations(),
-                this.getFoodProviders(),
-                this.getOrders()
-            ]);
+            const role = await this.getUserRole();
 
-            // Notify all subscribers
+            let adminStats = null;
+            let accommodations = { data: [], total: 0, page: 1 };
+            let foodProviders = { data: [], total: 0, page: 1 };
+            let orders = { data: [], total: 0, page: 1 };
+
+            if (role === 'admin') {
+                [adminStats, accommodations, foodProviders, orders] = await Promise.all([
+                    this.getAdminRealTimeStats(),
+                    this.getAccommodations(),
+                    this.getFoodProviders(),
+                    this.getOrders()
+                ]);
+            } else if (role === 'food_provider') {
+                // For food providers, only fetch their own stats/orders (customize as needed)
+                adminStats = await this.getAdminRealTimeStats(); // or a food provider dashboard endpoint
+                // Optionally, fetch provider-specific orders, analytics, etc.
+                // accommodations and foodProviders remain empty
+                orders = await this.getOrders(); // or a provider-specific orders endpoint
+            }
+
             this.notifySubscribers('adminStats', adminStats);
             this.notifySubscribers('accommodations', accommodations);
             this.notifySubscribers('foodProviders', foodProviders);
@@ -128,7 +152,6 @@ class RealTimeApiService {
 
         } catch (error) {
             console.error('Error fetching real-time data:', error);
-            // Stop real-time updates if there are persistent errors
             this.stopRealTimeUpdates();
         }
     }
